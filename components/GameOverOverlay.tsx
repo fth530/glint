@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,11 +13,11 @@ import Animated, {
   withDelay,
   withTiming,
   useAnimatedStyle,
-  interpolate,
   Easing,
 } from 'react-native-reanimated';
+import Colors from '@/constants/colors';
 
-const MONO_FONT = Platform.select({
+const MONO = Platform.select({
   ios: 'Courier New',
   android: 'monospace',
   default: 'monospace',
@@ -31,86 +31,90 @@ type Props = {
 
 export function GameOverOverlay({ score, bestScore, onPlayAgain }: Props) {
   const overlayOpacity = useSharedValue(0);
-  const contentScale = useSharedValue(0.85);
+  const contentScale = useSharedValue(0.88);
   const buttonScale = useSharedValue(0.8);
   const glitchX = useSharedValue(0);
+  const scanlineOpacity = useSharedValue(0);
 
   useEffect(() => {
-    overlayOpacity.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.quad) });
-    contentScale.value = withSpring(1, { damping: 16, stiffness: 180 });
+    overlayOpacity.value = withTiming(1, {
+      duration: 250,
+      easing: Easing.out(Easing.quad),
+    });
+    contentScale.value = withSpring(1, { damping: 18, stiffness: 200 });
+    scanlineOpacity.value = withTiming(1, { duration: 400 });
 
     glitchX.value = withSequence(
-      withTiming(-8, { duration: 50 }),
-      withTiming(8, { duration: 50 }),
-      withTiming(-5, { duration: 50 }),
-      withTiming(5, { duration: 50 }),
-      withTiming(0, { duration: 50 }),
+      withTiming(-10, { duration: 40 }),
+      withTiming(10, { duration: 40 }),
+      withTiming(-6, { duration: 40 }),
+      withTiming(6, { duration: 40 }),
+      withTiming(0, { duration: 40 }),
     );
 
     buttonScale.value = withDelay(
-      350,
+      300,
       withSpring(1, { damping: 12, stiffness: 200 }),
     );
   }, []);
 
-  const overlayStyle = useAnimatedStyle(() => ({
-    opacity: overlayOpacity.value,
-  }));
-
+  const overlayStyle = useAnimatedStyle(() => ({ opacity: overlayOpacity.value }));
   const contentStyle = useAnimatedStyle(() => ({
     transform: [{ scale: contentScale.value }, { translateX: glitchX.value }],
   }));
-
   const buttonStyle = useAnimatedStyle(() => ({
     transform: [{ scale: buttonScale.value }],
-    opacity: interpolate(buttonScale.value, [0.8, 1], [0, 1]),
+    opacity: buttonScale.value,
   }));
 
-  const handlePress = useCallback(() => {
-    onPlayAgain();
-  }, [onPlayAgain]);
+  const handlePress = useCallback(() => onPlayAgain(), [onPlayAgain]);
 
   const isNewBest = score > 0 && score >= bestScore;
 
   return (
     <Animated.View style={[styles.overlay, overlayStyle]}>
       <Animated.View style={[styles.content, contentStyle]}>
-        <View style={styles.titleRow}>
-          <Text style={styles.titleRed}>GAME</Text>
-          <Text style={styles.titleWhite}> OVER</Text>
+        <Text style={styles.sysLine}>{'// SYSTEM_FAILURE.log'}</Text>
+
+        <View style={styles.errorBlock}>
+          <Text style={styles.errorCode}>ERR_SIGNAL_LOST</Text>
         </View>
 
         <View style={styles.divider} />
 
-        <View style={styles.scoreContainer}>
-          <Text style={styles.scoreLabel}>SCORE</Text>
+        <View style={styles.scoreBlock}>
+          <Text style={styles.scoreLabel}>FINAL_SCORE</Text>
           <Text style={styles.scoreValue}>{score}</Text>
         </View>
 
         {isNewBest ? (
           <View style={styles.newBestBadge}>
-            <Text style={styles.newBestText}>NEW BEST</Text>
+            <Text style={styles.newBestText}>NEW HIGH SCORE</Text>
           </View>
         ) : (
-          <View style={styles.bestContainer}>
-            <Text style={styles.bestLabel}>BEST</Text>
+          <View style={styles.bestRow}>
+            <Text style={styles.bestLabel}>HIGH_SCORE</Text>
             <Text style={styles.bestValue}>{bestScore}</Text>
           </View>
         )}
+
+        <View style={styles.divider} />
 
         <Animated.View style={buttonStyle}>
           <Pressable
             onPress={handlePress}
             style={({ pressed }) => [
-              styles.button,
-              pressed && styles.buttonPressed,
+              styles.replayButton,
+              pressed && styles.replayButtonPressed,
             ]}
           >
-            <Text style={styles.buttonText}>PLAY AGAIN</Text>
+            <Text style={styles.replayText}>RESTART_SYSTEM</Text>
           </Pressable>
         </Animated.View>
 
-        <Text style={styles.hint}>tap signal words — ignore the noise</Text>
+        <Text style={styles.hint}>
+          {'> tap signal words — ignore the noise'}
+        </Text>
       </Animated.View>
     </Animated.View>
   );
@@ -119,115 +123,121 @@ export function GameOverOverlay({ score, bestScore, onPlayAgain }: Props) {
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.88)',
+    backgroundColor: Colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 100,
+    paddingHorizontal: 32,
   },
   content: {
-    width: '80%',
-    maxWidth: 320,
-    alignItems: 'center',
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: '#050505',
+    borderWidth: 1,
+    borderColor: Colors.dangerDim,
+    borderRadius: 2,
+    padding: 28,
     gap: 0,
   },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 20,
-  },
-  titleRed: {
-    fontSize: 42,
-    fontWeight: '900',
-    color: '#FF3B30',
-    fontFamily: MONO_FONT,
-    letterSpacing: 4,
-  },
-  titleWhite: {
-    fontSize: 42,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    fontFamily: MONO_FONT,
-    letterSpacing: 4,
-  },
-  divider: {
-    width: '100%',
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    marginBottom: 28,
-  },
-  scoreContainer: {
-    alignItems: 'center',
+  sysLine: {
+    fontSize: 10,
+    color: Colors.danger,
+    fontFamily: MONO,
+    letterSpacing: 1,
+    opacity: 0.6,
     marginBottom: 16,
   },
+  errorBlock: {
+    marginBottom: 16,
+  },
+  errorCode: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: Colors.danger,
+    fontFamily: MONO,
+    letterSpacing: 2,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: Colors.borderFaint,
+    marginVertical: 20,
+  },
+  scoreBlock: {
+    marginBottom: 14,
+  },
   scoreLabel: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.4)',
-    fontFamily: MONO_FONT,
+    fontSize: 10,
+    color: Colors.textFaint,
+    fontFamily: MONO,
     letterSpacing: 4,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   scoreValue: {
     fontSize: 72,
     fontWeight: '900',
-    color: '#FFFFFF',
-    fontFamily: MONO_FONT,
+    color: Colors.neon,
+    fontFamily: MONO,
     lineHeight: 80,
   },
   newBestBadge: {
-    backgroundColor: '#00FF85',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 3,
-    marginBottom: 32,
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.neon,
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 2,
+    marginBottom: 4,
   },
   newBestText: {
     color: '#000000',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '900',
-    fontFamily: MONO_FONT,
+    fontFamily: MONO,
     letterSpacing: 3,
   },
-  bestContainer: {
+  bestRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 32,
+    gap: 12,
+    marginBottom: 4,
   },
   bestLabel: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.35)',
-    fontFamily: MONO_FONT,
+    fontSize: 10,
+    color: Colors.textFaint,
+    fontFamily: MONO,
     letterSpacing: 3,
   },
   bestValue: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.55)',
-    fontFamily: MONO_FONT,
+    color: Colors.neonDim,
+    fontFamily: MONO,
   },
-  button: {
+  replayButton: {
     borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-    paddingHorizontal: 40,
+    borderColor: Colors.neon,
     paddingVertical: 16,
-    borderRadius: 3,
-    marginBottom: 24,
+    alignItems: 'center',
+    borderRadius: 2,
+    marginBottom: 16,
   },
-  buttonPressed: {
-    backgroundColor: '#FFFFFF',
+  replayButtonPressed: {
+    backgroundColor: Colors.neon,
   },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
+  replayText: {
+    fontSize: 13,
     fontWeight: '900',
-    fontFamily: MONO_FONT,
+    fontFamily: MONO,
     letterSpacing: 4,
+    color: Colors.neon,
+  },
+  replayTextPressed: {
+    color: '#000000',
   },
   hint: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.2)',
-    fontFamily: MONO_FONT,
-    letterSpacing: 1.5,
-    textAlign: 'center',
+    fontSize: 10,
+    color: Colors.textFaint,
+    fontFamily: MONO,
+    letterSpacing: 1,
+    textAlign: 'left',
   },
 });

@@ -38,6 +38,7 @@ export function useSignalGame(screenWidth: number) {
   const scoreRef = useRef(0);
   const spawnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPlayingRef = useRef(false);
+  const activeIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     AsyncStorage.getItem(BEST_SCORE_KEY).then((val) => {
@@ -70,9 +71,10 @@ export function useSignalGame(screenWidth: number) {
     const pool = isSignal ? SIGNALS : NOISES;
     const text = pool[Math.floor(Math.random() * pool.length)];
     const id = genId();
-    const WORD_WIDTH = 160;
+    const WORD_WIDTH = 168;
     const x = WORD_WIDTH / 2 + Math.random() * (screenWidth - WORD_WIDTH);
 
+    activeIdsRef.current.add(id);
     setWords((prev) => [...prev, { id, text, isSignal, x, fallDuration }]);
     scheduleNextSpawn();
   }, [screenWidth, scheduleNextSpawn]);
@@ -81,14 +83,20 @@ export function useSignalGame(screenWidth: number) {
     spawnWordRef.current = spawnWord;
   }, [spawnWord]);
 
+  const removeWord = useCallback((id: string) => {
+    activeIdsRef.current.delete(id);
+    setWords((prev) => prev.filter((w) => w.id !== id));
+  }, []);
+
   const triggerGameOver = useCallback(
     async (finalScore: number) => {
       isPlayingRef.current = false;
       clearSpawnTimer();
+      activeIdsRef.current.clear();
       setGameState('gameover');
       setWords([]);
 
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
 
       const best = await AsyncStorage.getItem(BEST_SCORE_KEY);
       const bestNum = best ? parseInt(best, 10) : 0;
@@ -103,35 +111,38 @@ export function useSignalGame(screenWidth: number) {
   const tapWord = useCallback(
     (id: string, isSignalWord: boolean) => {
       if (!isPlayingRef.current) return;
+      if (!activeIdsRef.current.has(id)) return;
 
       if (isSignalWord) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
         const newScore = scoreRef.current + 1;
         scoreRef.current = newScore;
         setScore(newScore);
-        setWords((prev) => prev.filter((w) => w.id !== id));
+        removeWord(id);
       } else {
         triggerGameOver(scoreRef.current);
       }
     },
-    [triggerGameOver],
+    [removeWord, triggerGameOver],
   );
 
   const wordFellOff = useCallback(
     (id: string, isSignalWord: boolean) => {
       if (!isPlayingRef.current) return;
+      if (!activeIdsRef.current.has(id)) return;
 
       if (isSignalWord) {
         triggerGameOver(scoreRef.current);
       } else {
-        setWords((prev) => prev.filter((w) => w.id !== id));
+        removeWord(id);
       }
     },
-    [triggerGameOver],
+    [removeWord, triggerGameOver],
   );
 
   const startGame = useCallback(() => {
     clearSpawnTimer();
+    activeIdsRef.current = new Set();
     scoreRef.current = 0;
     isPlayingRef.current = true;
     setScore(0);
@@ -140,7 +151,7 @@ export function useSignalGame(screenWidth: number) {
 
     setTimeout(() => {
       spawnWordRef.current();
-    }, 400);
+    }, 500);
   }, [clearSpawnTimer]);
 
   useEffect(() => {

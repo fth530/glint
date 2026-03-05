@@ -1,16 +1,20 @@
 import React, { useEffect, memo, useCallback, useRef } from 'react';
-import { Pressable, StyleSheet, Text, Platform } from 'react-native';
+import { StyleSheet, Text, Platform, View } from 'react-native';
 import Animated, {
   useSharedValue,
   withTiming,
   Easing,
   useAnimatedStyle,
-  runOnJS,
   cancelAnimation,
 } from 'react-native-reanimated';
+import {
+  GestureDetector,
+  Gesture,
+} from 'react-native-gesture-handler';
 import { WordItem } from '@/hooks/useSignalGame';
+import Colors from '@/constants/colors';
 
-const WORD_WIDTH = 160;
+export const WORD_WIDTH = 168;
 const MONO_FONT = Platform.select({
   ios: 'Courier New',
   android: 'monospace',
@@ -26,40 +30,41 @@ type Props = {
 
 function FallingWordComponent({ word, screenHeight, onTap, onFallOff }: Props) {
   const { id, text, isSignal, x, fallDuration } = word;
+
+  // Visual animation (purely cosmetic — does NOT drive game logic)
   const translateY = useSharedValue(-80);
-  const isMounted = useRef(true);
   const tapped = useRef(false);
 
+  // Keep latest callbacks accessible without recreating effects
   const onFallOffRef = useRef(onFallOff);
   useEffect(() => {
     onFallOffRef.current = onFallOff;
   }, [onFallOff]);
 
-  const handleFallComplete = useCallback(() => {
-    if (isMounted.current && !tapped.current) {
-      onFallOffRef.current(id, isSignal);
-    }
-  }, [id, isSignal]);
-
+  // === Visual animation ===
   useEffect(() => {
-    translateY.value = withTiming(
-      screenHeight + 80,
-      {
-        duration: fallDuration,
-        easing: Easing.linear,
-      },
-      (finished) => {
-        'worklet';
-        if (finished) {
-          runOnJS(handleFallComplete)();
-        }
-      },
-    );
-
+    translateY.value = withTiming(screenHeight + 80, {
+      duration: fallDuration,
+      easing: Easing.linear,
+    });
     return () => {
-      isMounted.current = false;
       cancelAnimation(translateY);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // === Fall-off detection (JS setTimeout — reliable on all platforms) ===
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!tapped.current) {
+        onFallOffRef.current(id, isSignal);
+      }
+    }, fallDuration);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const animStyle = useAnimatedStyle(() => ({
@@ -73,16 +78,20 @@ function FallingWordComponent({ word, screenHeight, onTap, onFallOff }: Props) {
     onTap(id, isSignal);
   }, [id, isSignal, onTap]);
 
+  const tapGesture = Gesture.Tap()
+    .maxDuration(500)
+    .runOnJS(true)
+    .onStart(handlePress);
+
   return (
     <Animated.View
       style={[styles.container, { left: x - WORD_WIDTH / 2 }, animStyle]}
     >
-      <Pressable
-        onPress={handlePress}
-        style={({ pressed }) => [styles.pressable, pressed && styles.pressed]}
-      >
-        <Text style={styles.text}>{text}</Text>
-      </Pressable>
+      <GestureDetector gesture={tapGesture}>
+        <View style={styles.pressable}>
+          <Text style={styles.text}>{text}</Text>
+        </View>
+      </GestureDetector>
     </Animated.View>
   );
 }
@@ -97,23 +106,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pressable: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-    borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderColor: Colors.border,
+    borderRadius: 2,
+    backgroundColor: Colors.neonFaint,
     alignItems: 'center',
-  },
-  pressed: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderColor: 'rgba(255,255,255,0.45)',
+    width: WORD_WIDTH,
   },
   text: {
-    color: '#FFFFFF',
-    fontSize: 17,
+    color: Colors.wordColor,
+    fontSize: 16,
     fontWeight: '700',
-    letterSpacing: 3.5,
+    letterSpacing: 4,
     fontFamily: MONO_FONT,
   },
 });

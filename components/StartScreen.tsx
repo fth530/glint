@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -8,15 +8,14 @@ import {
 } from 'react-native';
 import Animated, {
   useSharedValue,
-  withRepeat,
-  withSequence,
   withTiming,
   withSpring,
   useAnimatedStyle,
   Easing,
 } from 'react-native-reanimated';
+import Colors from '@/constants/colors';
 
-const MONO_FONT = Platform.select({
+const MONO = Platform.select({
   ios: 'Courier New',
   android: 'monospace',
   default: 'monospace',
@@ -25,97 +24,100 @@ const MONO_FONT = Platform.select({
 type Props = {
   bestScore: number;
   onStart: () => void;
+  onHelp: () => void;
 };
 
-export function StartScreen({ bestScore, onStart }: Props) {
-  const pulse = useSharedValue(1);
-  const titleOpacity = useSharedValue(0);
-  const subtitleOpacity = useSharedValue(0);
-  const buttonScale = useSharedValue(0.9);
+export function StartScreen({ bestScore, onStart, onHelp }: Props) {
+  const [cursorOn, setCursorOn] = useState(true);
+  const fadeIn = useSharedValue(0);
+  const buttonScale = useSharedValue(0.88);
 
   useEffect(() => {
-    titleOpacity.value = withTiming(1, { duration: 600 });
-    subtitleOpacity.value = withTiming(1, { duration: 900 });
+    fadeIn.value = withTiming(1, { duration: 700, easing: Easing.out(Easing.quad) });
     buttonScale.value = withSpring(1, { damping: 14, stiffness: 160 });
 
-    pulse.value = withRepeat(
-      withSequence(
-        withTiming(1.04, { duration: 900, easing: Easing.inOut(Easing.sin) }),
-        withTiming(1, { duration: 900, easing: Easing.inOut(Easing.sin) }),
-      ),
-      -1,
-      false,
-    );
+    const interval = setInterval(() => {
+      setCursorOn((v) => !v);
+    }, 530);
+    return () => clearInterval(interval);
   }, []);
 
-  const titleStyle = useAnimatedStyle(() => ({ opacity: titleOpacity.value }));
-  const subtitleStyle = useAnimatedStyle(() => ({
-    opacity: subtitleOpacity.value,
-  }));
+  const fadeStyle = useAnimatedStyle(() => ({ opacity: fadeIn.value }));
   const buttonStyle = useAnimatedStyle(() => ({
     transform: [{ scale: buttonScale.value }],
   }));
-  const pulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulse.value }],
-  }));
 
-  const handlePress = useCallback(() => {
-    onStart();
-  }, [onStart]);
+  const handleStart = useCallback(() => onStart(), [onStart]);
+  const handleHelp = useCallback(() => onHelp(), [onHelp]);
 
   return (
     <View style={styles.container}>
-      <Animated.View style={titleStyle}>
-        <Text style={styles.titleSignal}>SIGNAL</Text>
-        <View style={styles.titleDividerRow}>
-          <View style={styles.titleDividerLine} />
-          <Text style={styles.titleVs}>VS</Text>
-          <View style={styles.titleDividerLine} />
+      <Animated.View style={[styles.inner, fadeStyle]}>
+        <View style={styles.topBar}>
+          <Text style={styles.topBarText}>{'// SIGNAL_VS_NOISE v1.0'}</Text>
+          <Pressable onPress={handleHelp} style={styles.helpButton} hitSlop={12}>
+            <Text style={styles.helpButtonText}>[ ? ]</Text>
+          </Pressable>
         </View>
-        <Text style={styles.titleNoise}>NOISE</Text>
-      </Animated.View>
 
-      <Animated.View style={[styles.rules, subtitleStyle]}>
-        <RuleRow color="#00FF85" label="TAP" desc="real words" />
-        <RuleRow color="#FF3B30" label="IGNORE" desc="fake / leet words" />
-        <RuleRow color="#FF3B30" label="MISS" desc="a real word = game over" />
-      </Animated.View>
+        <View style={styles.titleBlock}>
+          <Text style={styles.titleSignal}>SIGNAL</Text>
+          <View style={styles.titleSepRow}>
+            <View style={styles.titleSepLine} />
+            <Text style={styles.titleSep}>vs</Text>
+            <View style={styles.titleSepLine} />
+          </View>
+          <Text style={styles.titleNoise}>NOISE</Text>
+        </View>
 
-      {bestScore > 0 && (
-        <Animated.View style={[styles.bestContainer, subtitleStyle]}>
-          <Text style={styles.bestLabel}>BEST</Text>
-          <Text style={styles.bestValue}>{bestScore}</Text>
+        <View style={styles.terminalBlock}>
+          <View style={styles.termLine}>
+            <Text style={styles.termPrompt}>{'> '}</Text>
+            <Text style={styles.termText}>system ready.</Text>
+          </View>
+          <View style={styles.termLine}>
+            <Text style={styles.termPrompt}>{'> '}</Text>
+            <Text style={styles.termText}>words incoming</Text>
+            <Text style={[styles.termCursor, !cursorOn && styles.termCursorHidden]}>
+              {'_'}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.rulesBlock}>
+          <TermRule prefix="TAP" text="signal words to score" color={Colors.neon} />
+          <TermRule prefix="MISS" text="a signal → failure" color={Colors.danger} />
+          <TermRule prefix="TAP" text="noise → failure" color={Colors.danger} />
+        </View>
+
+        {bestScore > 0 && (
+          <View style={styles.bestRow}>
+            <Text style={styles.bestLabel}>HIGH_SCORE</Text>
+            <Text style={styles.bestValue}>{bestScore}</Text>
+          </View>
+        )}
+
+        <Animated.View style={buttonStyle}>
+          <Pressable
+            onPress={handleStart}
+            style={({ pressed }) => [
+              styles.startButton,
+              pressed && styles.startButtonPressed,
+            ]}
+          >
+            <Text style={styles.startButtonText}>EXECUTE</Text>
+          </Pressable>
         </Animated.View>
-      )}
-
-      <Animated.View style={[buttonStyle, pulseStyle]}>
-        <Pressable
-          onPress={handlePress}
-          style={({ pressed }) => [
-            styles.startButton,
-            pressed && styles.startButtonPressed,
-          ]}
-        >
-          <Text style={styles.startButtonText}>START</Text>
-        </Pressable>
       </Animated.View>
     </View>
   );
 }
 
-function RuleRow({
-  color,
-  label,
-  desc,
-}: {
-  color: string;
-  label: string;
-  desc: string;
-}) {
+function TermRule({ prefix, text, color }: { prefix: string; text: string; color: string }) {
   return (
     <View style={styles.ruleRow}>
-      <Text style={[styles.ruleLabel, { color }]}>{label}</Text>
-      <Text style={styles.ruleDesc}>{desc}</Text>
+      <Text style={[styles.rulePrefix, { color }]}>{prefix}</Text>
+      <Text style={styles.ruleText}>{text}</Text>
     </View>
   );
 }
@@ -123,106 +125,159 @@ function RuleRow({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  inner: {
     gap: 0,
-    paddingHorizontal: 40,
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 32,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderFaint,
+    paddingBottom: 12,
+  },
+  topBarText: {
+    fontSize: 10,
+    color: Colors.textFaint,
+    fontFamily: MONO,
+    letterSpacing: 1,
+  },
+  helpButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  helpButtonText: {
+    fontSize: 12,
+    color: Colors.textDim,
+    fontFamily: MONO,
+    letterSpacing: 2,
+  },
+  titleBlock: {
+    marginBottom: 28,
   },
   titleSignal: {
-    fontSize: 48,
+    fontSize: 52,
     fontWeight: '900',
-    color: '#00FF85',
-    fontFamily: MONO_FONT,
-    letterSpacing: 6,
-    textAlign: 'center',
+    color: Colors.neon,
+    fontFamily: MONO,
+    letterSpacing: 5,
   },
-  titleDividerRow: {
+  titleSepRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 6,
-    gap: 12,
+    marginVertical: 4,
+    gap: 10,
   },
-  titleDividerLine: {
+  titleSepLine: {
     flex: 1,
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: Colors.borderFaint,
   },
-  titleVs: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.3)',
-    fontFamily: MONO_FONT,
+  titleSep: {
+    fontSize: 12,
+    color: Colors.textFaint,
+    fontFamily: MONO,
     letterSpacing: 4,
   },
   titleNoise: {
-    fontSize: 48,
+    fontSize: 52,
     fontWeight: '900',
-    color: '#FF3B30',
-    fontFamily: MONO_FONT,
-    letterSpacing: 6,
-    textAlign: 'center',
-    marginBottom: 48,
+    color: Colors.danger,
+    fontFamily: MONO,
+    letterSpacing: 5,
   },
-  rules: {
-    width: '100%',
-    gap: 12,
-    marginBottom: 36,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    paddingVertical: 20,
+  terminalBlock: {
+    borderWidth: 1,
+    borderColor: Colors.borderFaint,
+    backgroundColor: 'rgba(0,255,65,0.03)',
+    padding: 14,
+    borderRadius: 2,
+    gap: 4,
+    marginBottom: 20,
+  },
+  termLine: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  termPrompt: {
+    fontSize: 13,
+    color: Colors.neon,
+    fontFamily: MONO,
+  },
+  termText: {
+    fontSize: 13,
+    color: Colors.textDim,
+    fontFamily: MONO,
+  },
+  termCursor: {
+    fontSize: 13,
+    color: Colors.neon,
+    fontFamily: MONO,
+  },
+  termCursorHidden: {
+    opacity: 0,
+  },
+  rulesBlock: {
+    gap: 8,
+    marginBottom: 28,
+    paddingLeft: 4,
   },
   ruleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  ruleLabel: {
-    fontSize: 11,
+  rulePrefix: {
+    fontSize: 10,
     fontWeight: '900',
-    fontFamily: MONO_FONT,
+    fontFamily: MONO,
     letterSpacing: 3,
-    width: 64,
+    width: 44,
   },
-  ruleDesc: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.5)',
-    fontFamily: MONO_FONT,
+  ruleText: {
+    fontSize: 12,
+    color: Colors.textFaint,
+    fontFamily: MONO,
     letterSpacing: 1,
   },
-  bestContainer: {
+  bestRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 32,
+    gap: 14,
+    marginBottom: 24,
+    paddingLeft: 4,
   },
   bestLabel: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.3)',
-    fontFamily: MONO_FONT,
-    letterSpacing: 4,
+    fontSize: 10,
+    color: Colors.textFaint,
+    fontFamily: MONO,
+    letterSpacing: 3,
   },
   bestValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.5)',
-    fontFamily: MONO_FONT,
+    fontSize: 22,
+    fontWeight: '900',
+    color: Colors.neonDim,
+    fontFamily: MONO,
   },
   startButton: {
     borderWidth: 1.5,
-    borderColor: '#00FF85',
-    paddingHorizontal: 52,
+    borderColor: Colors.neon,
     paddingVertical: 18,
-    borderRadius: 3,
+    alignItems: 'center',
+    borderRadius: 2,
   },
   startButtonPressed: {
-    backgroundColor: '#00FF85',
+    backgroundColor: Colors.neon,
   },
   startButtonText: {
-    color: '#00FF85',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '900',
-    fontFamily: MONO_FONT,
-    letterSpacing: 6,
+    fontFamily: MONO,
+    letterSpacing: 7,
+    color: Colors.neon,
   },
 });
