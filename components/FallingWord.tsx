@@ -1,5 +1,5 @@
 import React, { useEffect, memo, useCallback, useRef } from 'react';
-import { StyleSheet, Text, Platform, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   useSharedValue,
   withTiming,
@@ -7,19 +7,11 @@ import Animated, {
   useAnimatedStyle,
   cancelAnimation,
 } from 'react-native-reanimated';
-import {
-  GestureDetector,
-  Gesture,
-} from 'react-native-gesture-handler';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { WordItem } from '@/hooks/useSignalGame';
 import Colors from '@/constants/colors';
 
-export const WORD_WIDTH = 168;
-const MONO_FONT = Platform.select({
-  ios: 'Courier New',
-  android: 'monospace',
-  default: 'monospace',
-});
+export const WORD_WIDTH = 160;
 
 type Props = {
   word: WordItem;
@@ -31,19 +23,15 @@ type Props = {
 function FallingWordComponent({ word, screenHeight, onTap, onFallOff }: Props) {
   const { id, text, isSignal, x, fallDuration } = word;
 
-  // Visual animation (purely cosmetic — does NOT drive game logic)
-  const translateY = useSharedValue(-80);
+  const translateY = useSharedValue(-72);
   const tapped = useRef(false);
-
-  // Keep latest callbacks accessible without recreating effects
   const onFallOffRef = useRef(onFallOff);
   useEffect(() => {
     onFallOffRef.current = onFallOff;
   }, [onFallOff]);
 
-  // === Visual animation ===
   useEffect(() => {
-    translateY.value = withTiming(screenHeight + 80, {
+    translateY.value = withTiming(screenHeight + 72, {
       duration: fallDuration,
       easing: Easing.linear,
     });
@@ -53,17 +41,13 @@ function FallingWordComponent({ word, screenHeight, onTap, onFallOff }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // === Fall-off detection (JS setTimeout — reliable on all platforms) ===
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!tapped.current) {
         onFallOffRef.current(id, isSignal);
       }
     }, fallDuration);
-
-    return () => {
-      clearTimeout(timer);
-    };
+    return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -84,11 +68,9 @@ function FallingWordComponent({ word, screenHeight, onTap, onFallOff }: Props) {
     .onStart(handlePress);
 
   return (
-    <Animated.View
-      style={[styles.container, { left: x - WORD_WIDTH / 2 }, animStyle]}
-    >
+    <Animated.View style={[styles.container, { left: x - WORD_WIDTH / 2 }, animStyle]}>
       <GestureDetector gesture={tapGesture}>
-        <View style={styles.pressable}>
+        <View style={styles.chip}>
           <Text style={styles.text}>{text}</Text>
         </View>
       </GestureDetector>
@@ -105,21 +87,25 @@ const styles = StyleSheet.create({
     width: WORD_WIDTH,
     alignItems: 'center',
   },
-  pressable: {
+  chip: {
+    width: WORD_WIDTH,
     paddingHorizontal: 16,
     paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: Colors.wordBg,
     borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 2,
-    backgroundColor: Colors.neonFaint,
+    borderColor: Colors.wordBorder,
     alignItems: 'center',
-    width: WORD_WIDTH,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 3,
   },
   text: {
-    color: Colors.wordColor,
-    fontSize: 16,
+    color: Colors.wordText,
+    fontSize: 15,
     fontWeight: '700',
-    letterSpacing: 4,
-    fontFamily: MONO_FONT,
+    letterSpacing: 2.5,
   },
 });

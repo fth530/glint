@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 
 import { useSignalGame } from '@/hooks/useSignalGame';
 import { FallingWord } from '@/components/FallingWord';
@@ -16,12 +17,6 @@ import { GameOverOverlay } from '@/components/GameOverOverlay';
 import { StartScreen } from '@/components/StartScreen';
 import { HowToPlayModal } from '@/components/HowToPlayModal';
 import Colors from '@/constants/colors';
-
-const MONO = Platform.select({
-  ios: 'Courier New',
-  android: 'monospace',
-  default: 'monospace',
-});
 
 export default function GameScreen() {
   const { width, height } = useWindowDimensions();
@@ -49,19 +44,23 @@ export default function GameScreen() {
 
   return (
     <View style={styles.root}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       {gameState === 'playing' && (
         <>
-          <View style={[styles.hud, { paddingTop: topPad + 10 }]}>
+          <View style={[styles.hud, { paddingTop: topPad + 8 }]}>
             <View style={styles.hudLeft}>
-              <Text style={styles.hudPrompt}>{'> '}</Text>
-              <Text style={styles.hudScoreLabel}>SCORE</Text>
+              <Text style={styles.hudLabel}>Score</Text>
+              <Text style={styles.hudScore}>{score}</Text>
             </View>
-            <Text style={styles.hudScore}>{score}</Text>
-            <Pressable onPress={openHelp} style={styles.helpBtn} hitSlop={12}>
-              <Text style={styles.helpBtnText}>[ ? ]</Text>
-            </Pressable>
+            <View style={styles.hudRight}>
+              <View style={styles.hudLevel}>
+                <Text style={styles.hudLevelText}>Lv {Math.floor(score / 5) + 1}</Text>
+              </View>
+              <Pressable onPress={openHelp} style={styles.hudIconBtn} hitSlop={12}>
+                <Ionicons name="help-circle-outline" size={22} color={Colors.textSec} />
+              </Pressable>
+            </View>
           </View>
 
           <View style={[styles.field, { pointerEvents: 'box-none' }]}>
@@ -75,36 +74,19 @@ export default function GameScreen() {
               />
             ))}
           </View>
-
-          <View style={[styles.cornerBR, { pointerEvents: 'none' }]}>
-            <Text style={styles.cornerText}>
-              {`LVL_${Math.floor(score / 5) + 1}`}
-            </Text>
-          </View>
         </>
       )}
 
       {gameState === 'idle' && (
-        <View
-          style={[
-            styles.startWrapper,
-            { paddingTop: topPad, paddingBottom: botPad },
-          ]}
-        >
-          <StartScreen
-            bestScore={bestScore}
-            onStart={startGame}
-            onHelp={openHelp}
-          />
+        <View style={[styles.startWrapper, { paddingTop: topPad, paddingBottom: botPad }]}>
+          <StartScreen bestScore={bestScore} onStart={startGame} onHelp={openHelp} />
         </View>
       )}
 
       {gameState === 'gameover' && (
-        <GameOverOverlay
-          score={score}
-          bestScore={bestScore}
-          onPlayAgain={startGame}
-        />
+        <View style={[styles.gameOverWrapper, { paddingTop: topPad, paddingBottom: botPad }]}>
+          <GameOverOverlay score={score} bestScore={bestScore} onPlayAgain={startGame} />
+        </View>
       )}
 
       <HowToPlayModal visible={showHelp} onClose={closeHelp} />
@@ -124,64 +106,68 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 10,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: 12,
+    paddingHorizontal: 24,
+    paddingBottom: 14,
+    backgroundColor: Colors.bg,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.borderFaint,
-    backgroundColor: 'rgba(0,0,0,0.75)',
+    borderBottomColor: Colors.border,
   },
   hudLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
+    gap: 0,
   },
-  hudPrompt: {
-    fontSize: 14,
-    color: Colors.neon,
-    fontFamily: MONO,
-  },
-  hudScoreLabel: {
+  hudLabel: {
     fontSize: 11,
-    color: Colors.textFaint,
-    fontFamily: MONO,
-    letterSpacing: 3,
+    fontWeight: '500',
+    color: Colors.textTer,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: 2,
   },
   hudScore: {
-    fontSize: 34,
-    fontWeight: '900',
-    color: Colors.neon,
-    fontFamily: MONO,
+    fontSize: 36,
+    fontWeight: '800',
+    color: Colors.text,
+    letterSpacing: -1,
+    lineHeight: 40,
   },
-  helpBtn: {
-    paddingHorizontal: 6,
-    paddingVertical: 4,
+  hudRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingBottom: 4,
   },
-  helpBtnText: {
+  hudLevel: {
+    backgroundColor: Colors.accentLight,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  hudLevelText: {
     fontSize: 12,
-    color: Colors.textDim,
-    fontFamily: MONO,
-    letterSpacing: 2,
+    fontWeight: '700',
+    color: Colors.accent,
+  },
+  hudIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.bgSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   field: {
     flex: 1,
     position: 'relative',
     overflow: 'hidden',
-  },
-  cornerBR: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-    zIndex: 5,
-  },
-  cornerText: {
-    fontSize: 10,
-    color: Colors.textFaint,
-    fontFamily: MONO,
-    letterSpacing: 2,
+    backgroundColor: Colors.bgSoft,
   },
   startWrapper: {
     flex: 1,
+  },
+  gameOverWrapper: {
+    flex: 1,
+    backgroundColor: Colors.bgSoft,
   },
 });

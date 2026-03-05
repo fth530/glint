@@ -42,6 +42,26 @@ hooks/
   useSignalGame.ts     # Core game logic: state, spawning, difficulty, haptics
 ```
 
+## Visual Design
+
+Clean, modern, premium aesthetic (chic Apple/Google style):
+- **Background**: Pure white `#FFFFFF` / soft off-white `#F5F7FA`
+- **Accent (Signal)**: Mint green `#00C853`
+- **Danger (Noise/Error)**: Coral red `#FF5252`
+- **Text**: Near-black `#111827`, secondary `#6B7280`
+- **Typography**: System sans-serif (SF Pro on iOS, Roboto on Android) — no monospace
+- **Word chips**: White pill with subtle shadow/border, dark gray text
+- **HUD**: Clean white header bar with score + level badge
+- **GameOver**: Centered modal card with overlay blur, refresh icon button
+- **How to Play**: Bottom sheet with rounded top corners, chips color-coded green/red
+
+## Key Technical Decisions
+
+- `GestureDetector` + `Gesture.Tap().runOnJS(true)` — only reliable way to tap animated views
+- `setTimeout` for fall-off detection (NOT Reanimated callbacks — unreliable on web)
+- `activeIdsRef` (Set) tracks valid word IDs per session; reset on `startGame()` to prevent stale callbacks
+- `SafeAreaProvider` in `_layout.tsx` — required for `useSafeAreaInsets` in game screen + modal
+
 ## Workflows
 
 - **Start Frontend**: `npm run expo:dev` — runs Metro on port 8081

@@ -1,11 +1,5 @@
-import React, { useEffect, useCallback, useState } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  Platform,
-} from 'react-native';
+import React, { useEffect, useCallback } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
   withTiming,
@@ -13,13 +7,8 @@ import Animated, {
   useAnimatedStyle,
   Easing,
 } from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
 import Colors from '@/constants/colors';
-
-const MONO = Platform.select({
-  ios: 'Courier New',
-  android: 'monospace',
-  default: 'monospace',
-});
 
 type Props = {
   bestScore: number;
@@ -28,21 +17,20 @@ type Props = {
 };
 
 export function StartScreen({ bestScore, onStart, onHelp }: Props) {
-  const [cursorOn, setCursorOn] = useState(true);
   const fadeIn = useSharedValue(0);
-  const buttonScale = useSharedValue(0.88);
+  const slideUp = useSharedValue(24);
+  const buttonScale = useSharedValue(0.92);
 
   useEffect(() => {
-    fadeIn.value = withTiming(1, { duration: 700, easing: Easing.out(Easing.quad) });
-    buttonScale.value = withSpring(1, { damping: 14, stiffness: 160 });
-
-    const interval = setInterval(() => {
-      setCursorOn((v) => !v);
-    }, 530);
-    return () => clearInterval(interval);
+    fadeIn.value = withTiming(1, { duration: 500, easing: Easing.out(Easing.quad) });
+    slideUp.value = withTiming(0, { duration: 500, easing: Easing.out(Easing.quad) });
+    buttonScale.value = withSpring(1, { damping: 16, stiffness: 180 });
   }, []);
 
-  const fadeStyle = useAnimatedStyle(() => ({ opacity: fadeIn.value }));
+  const contentStyle = useAnimatedStyle(() => ({
+    opacity: fadeIn.value,
+    transform: [{ translateY: slideUp.value }],
+  }));
   const buttonStyle = useAnimatedStyle(() => ({
     transform: [{ scale: buttonScale.value }],
   }));
@@ -52,47 +40,40 @@ export function StartScreen({ bestScore, onStart, onHelp }: Props) {
 
   return (
     <View style={styles.container}>
-      <Animated.View style={[styles.inner, fadeStyle]}>
-        <View style={styles.topBar}>
-          <Text style={styles.topBarText}>{'// SIGNAL_VS_NOISE v1.0'}</Text>
-          <Pressable onPress={handleHelp} style={styles.helpButton} hitSlop={12}>
-            <Text style={styles.helpButtonText}>[ ? ]</Text>
+      <Animated.View style={[styles.inner, contentStyle]}>
+        <View style={styles.topRow}>
+          <Text style={styles.subtitle}>WORD REFLEX GAME</Text>
+          <Pressable onPress={handleHelp} style={styles.iconBtn} hitSlop={12}>
+            <Ionicons name="help-circle-outline" size={22} color={Colors.textSec} />
           </Pressable>
         </View>
 
         <View style={styles.titleBlock}>
-          <Text style={styles.titleSignal}>SIGNAL</Text>
-          <View style={styles.titleSepRow}>
-            <View style={styles.titleSepLine} />
-            <Text style={styles.titleSep}>vs</Text>
-            <View style={styles.titleSepLine} />
-          </View>
-          <Text style={styles.titleNoise}>NOISE</Text>
+          <Text style={styles.titleTop}>Signal</Text>
+          <Text style={styles.titleDivider}>vs</Text>
+          <Text style={styles.titleBottom}>Noise</Text>
         </View>
 
-        <View style={styles.terminalBlock}>
-          <View style={styles.termLine}>
-            <Text style={styles.termPrompt}>{'> '}</Text>
-            <Text style={styles.termText}>system ready.</Text>
-          </View>
-          <View style={styles.termLine}>
-            <Text style={styles.termPrompt}>{'> '}</Text>
-            <Text style={styles.termText}>words incoming</Text>
-            <Text style={[styles.termCursor, !cursorOn && styles.termCursorHidden]}>
-              {'_'}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.rulesBlock}>
-          <TermRule prefix="TAP" text="signal words to score" color={Colors.neon} />
-          <TermRule prefix="MISS" text="a signal → failure" color={Colors.danger} />
-          <TermRule prefix="TAP" text="noise → failure" color={Colors.danger} />
+        <View style={styles.ruleCards}>
+          <RuleCard
+            icon="checkmark-circle"
+            iconColor={Colors.accent}
+            bg={Colors.accentLight}
+            label="Tap signal words"
+            sub="Real, correct words"
+          />
+          <RuleCard
+            icon="close-circle"
+            iconColor={Colors.danger}
+            bg={Colors.dangerLight}
+            label="Ignore noise words"
+            sub="Leet / fake words"
+          />
         </View>
 
         {bestScore > 0 && (
           <View style={styles.bestRow}>
-            <Text style={styles.bestLabel}>HIGH_SCORE</Text>
+            <Text style={styles.bestLabel}>Best</Text>
             <Text style={styles.bestValue}>{bestScore}</Text>
           </View>
         )}
@@ -100,12 +81,10 @@ export function StartScreen({ bestScore, onStart, onHelp }: Props) {
         <Animated.View style={buttonStyle}>
           <Pressable
             onPress={handleStart}
-            style={({ pressed }) => [
-              styles.startButton,
-              pressed && styles.startButtonPressed,
-            ]}
+            style={({ pressed }) => [styles.startBtn, pressed && styles.startBtnPressed]}
           >
-            <Text style={styles.startButtonText}>EXECUTE</Text>
+            <Ionicons name="play" size={18} color="#fff" style={styles.startIcon} />
+            <Text style={styles.startBtnText}>Start Game</Text>
           </Pressable>
         </Animated.View>
       </Animated.View>
@@ -113,11 +92,26 @@ export function StartScreen({ bestScore, onStart, onHelp }: Props) {
   );
 }
 
-function TermRule({ prefix, text, color }: { prefix: string; text: string; color: string }) {
+function RuleCard({
+  icon,
+  iconColor,
+  bg,
+  label,
+  sub,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  iconColor: string;
+  bg: string;
+  label: string;
+  sub: string;
+}) {
   return (
-    <View style={styles.ruleRow}>
-      <Text style={[styles.rulePrefix, { color }]}>{prefix}</Text>
-      <Text style={styles.ruleText}>{text}</Text>
+    <View style={[styles.ruleCard, { backgroundColor: bg }]}>
+      <Ionicons name={icon} size={20} color={iconColor} />
+      <View style={styles.ruleCardText}>
+        <Text style={styles.ruleCardLabel}>{label}</Text>
+        <Text style={styles.ruleCardSub}>{sub}</Text>
+      </View>
     </View>
   );
 }
@@ -125,159 +119,123 @@ function TermRule({ prefix, text, color }: { prefix: string; text: string; color
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Colors.bg,
     justifyContent: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: 28,
   },
   inner: {
     gap: 0,
   },
-  topBar: {
+  topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 32,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderFaint,
-    paddingBottom: 12,
+    marginBottom: 36,
   },
-  topBarText: {
-    fontSize: 10,
-    color: Colors.textFaint,
-    fontFamily: MONO,
-    letterSpacing: 1,
+  subtitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.textTer,
+    letterSpacing: 2.5,
   },
-  helpButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  helpButtonText: {
-    fontSize: 12,
-    color: Colors.textDim,
-    fontFamily: MONO,
-    letterSpacing: 2,
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.bgSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   titleBlock: {
-    marginBottom: 28,
+    marginBottom: 40,
   },
-  titleSignal: {
-    fontSize: 52,
-    fontWeight: '900',
-    color: Colors.neon,
-    fontFamily: MONO,
-    letterSpacing: 5,
+  titleTop: {
+    fontSize: 58,
+    fontWeight: '800',
+    color: Colors.accent,
+    lineHeight: 64,
+    letterSpacing: -1.5,
   },
-  titleSepRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  titleDivider: {
+    fontSize: 20,
+    fontWeight: '400',
+    color: Colors.textTer,
     marginVertical: 4,
-    gap: 10,
-  },
-  titleSepLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.borderFaint,
-  },
-  titleSep: {
-    fontSize: 12,
-    color: Colors.textFaint,
-    fontFamily: MONO,
-    letterSpacing: 4,
-  },
-  titleNoise: {
-    fontSize: 52,
-    fontWeight: '900',
-    color: Colors.danger,
-    fontFamily: MONO,
-    letterSpacing: 5,
-  },
-  terminalBlock: {
-    borderWidth: 1,
-    borderColor: Colors.borderFaint,
-    backgroundColor: 'rgba(0,255,65,0.03)',
-    padding: 14,
-    borderRadius: 2,
-    gap: 4,
-    marginBottom: 20,
-  },
-  termLine: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  termPrompt: {
-    fontSize: 13,
-    color: Colors.neon,
-    fontFamily: MONO,
-  },
-  termText: {
-    fontSize: 13,
-    color: Colors.textDim,
-    fontFamily: MONO,
-  },
-  termCursor: {
-    fontSize: 13,
-    color: Colors.neon,
-    fontFamily: MONO,
-  },
-  termCursorHidden: {
-    opacity: 0,
-  },
-  rulesBlock: {
-    gap: 8,
-    marginBottom: 28,
-    paddingLeft: 4,
-  },
-  ruleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  rulePrefix: {
-    fontSize: 10,
-    fontWeight: '900',
-    fontFamily: MONO,
-    letterSpacing: 3,
-    width: 44,
-  },
-  ruleText: {
-    fontSize: 12,
-    color: Colors.textFaint,
-    fontFamily: MONO,
     letterSpacing: 1,
   },
-  bestRow: {
+  titleBottom: {
+    fontSize: 58,
+    fontWeight: '800',
+    color: Colors.danger,
+    lineHeight: 64,
+    letterSpacing: -1.5,
+  },
+  ruleCards: {
+    gap: 10,
+    marginBottom: 36,
+  },
+  ruleCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderRadius: 16,
+  },
+  ruleCardText: {
+    flex: 1,
+    gap: 2,
+  },
+  ruleCardLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  ruleCardSub: {
+    fontSize: 12,
+    color: Colors.textSec,
+  },
+  bestRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
     marginBottom: 24,
-    paddingLeft: 4,
   },
   bestLabel: {
-    fontSize: 10,
-    color: Colors.textFaint,
-    fontFamily: MONO,
-    letterSpacing: 3,
+    fontSize: 13,
+    color: Colors.textTer,
+    fontWeight: '500',
   },
   bestValue: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: Colors.neonDim,
-    fontFamily: MONO,
+    fontSize: 28,
+    fontWeight: '700',
+    color: Colors.textSec,
   },
-  startButton: {
-    borderWidth: 1.5,
-    borderColor: Colors.neon,
+  startBtn: {
+    backgroundColor: Colors.accent,
+    borderRadius: 18,
     paddingVertical: 18,
+    flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 2,
+    justifyContent: 'center',
+    gap: 10,
+    shadowColor: Colors.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  startButtonPressed: {
-    backgroundColor: Colors.neon,
+  startBtnPressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.98 }],
   },
-  startButtonText: {
-    fontSize: 15,
-    fontWeight: '900',
-    fontFamily: MONO,
-    letterSpacing: 7,
-    color: Colors.neon,
+  startIcon: {
+    marginLeft: 4,
+  },
+  startBtnText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#ffffff',
+    letterSpacing: 0.3,
   },
 });

@@ -1,27 +1,15 @@
 import React, { useEffect, useCallback } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  Platform,
-} from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
   withSpring,
-  withSequence,
   withDelay,
   withTiming,
   useAnimatedStyle,
   Easing,
 } from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
 import Colors from '@/constants/colors';
-
-const MONO = Platform.select({
-  ios: 'Courier New',
-  android: 'monospace',
-  default: 'monospace',
-});
 
 type Props = {
   score: number;
@@ -31,90 +19,70 @@ type Props = {
 
 export function GameOverOverlay({ score, bestScore, onPlayAgain }: Props) {
   const overlayOpacity = useSharedValue(0);
-  const contentScale = useSharedValue(0.88);
-  const buttonScale = useSharedValue(0.8);
-  const glitchX = useSharedValue(0);
-  const scanlineOpacity = useSharedValue(0);
+  const cardScale = useSharedValue(0.88);
+  const cardOpacity = useSharedValue(0);
+  const btnScale = useSharedValue(0.8);
 
   useEffect(() => {
-    overlayOpacity.value = withTiming(1, {
-      duration: 250,
-      easing: Easing.out(Easing.quad),
-    });
-    contentScale.value = withSpring(1, { damping: 18, stiffness: 200 });
-    scanlineOpacity.value = withTiming(1, { duration: 400 });
-
-    glitchX.value = withSequence(
-      withTiming(-10, { duration: 40 }),
-      withTiming(10, { duration: 40 }),
-      withTiming(-6, { duration: 40 }),
-      withTiming(6, { duration: 40 }),
-      withTiming(0, { duration: 40 }),
-    );
-
-    buttonScale.value = withDelay(
-      300,
-      withSpring(1, { damping: 12, stiffness: 200 }),
-    );
+    overlayOpacity.value = withTiming(1, { duration: 280, easing: Easing.out(Easing.quad) });
+    cardScale.value = withSpring(1, { damping: 18, stiffness: 200 });
+    cardOpacity.value = withTiming(1, { duration: 260 });
+    btnScale.value = withDelay(260, withSpring(1, { damping: 14, stiffness: 200 }));
   }, []);
 
   const overlayStyle = useAnimatedStyle(() => ({ opacity: overlayOpacity.value }));
-  const contentStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: contentScale.value }, { translateX: glitchX.value }],
+  const cardStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: cardScale.value }],
+    opacity: cardOpacity.value,
   }));
-  const buttonStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: buttonScale.value }],
-    opacity: buttonScale.value,
+  const btnStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: btnScale.value }],
+    opacity: btnScale.value,
   }));
 
   const handlePress = useCallback(() => onPlayAgain(), [onPlayAgain]);
-
   const isNewBest = score > 0 && score >= bestScore;
 
   return (
     <Animated.View style={[styles.overlay, overlayStyle]}>
-      <Animated.View style={[styles.content, contentStyle]}>
-        <Text style={styles.sysLine}>{'// SYSTEM_FAILURE.log'}</Text>
-
-        <View style={styles.errorBlock}>
-          <Text style={styles.errorCode}>ERR_SIGNAL_LOST</Text>
+      <Animated.View style={[styles.card, cardStyle]}>
+        <View style={styles.iconRow}>
+          <View style={styles.iconCircle}>
+            <Ionicons name="alert-circle" size={32} color={Colors.danger} />
+          </View>
         </View>
+
+        <Text style={styles.title}>Game Over</Text>
+        <Text style={styles.tagline}>Signal lost</Text>
 
         <View style={styles.divider} />
 
         <View style={styles.scoreBlock}>
-          <Text style={styles.scoreLabel}>FINAL_SCORE</Text>
+          <Text style={styles.scoreLabel}>Score</Text>
           <Text style={styles.scoreValue}>{score}</Text>
         </View>
 
         {isNewBest ? (
           <View style={styles.newBestBadge}>
-            <Text style={styles.newBestText}>NEW HIGH SCORE</Text>
+            <Ionicons name="trophy" size={13} color={Colors.accent} />
+            <Text style={styles.newBestText}>New Best</Text>
           </View>
-        ) : (
+        ) : bestScore > 0 ? (
           <View style={styles.bestRow}>
-            <Text style={styles.bestLabel}>HIGH_SCORE</Text>
+            <Text style={styles.bestLabel}>Best</Text>
             <Text style={styles.bestValue}>{bestScore}</Text>
           </View>
-        )}
+        ) : null}
 
-        <View style={styles.divider} />
-
-        <Animated.View style={buttonStyle}>
+        <Animated.View style={[styles.btnWrap, btnStyle]}>
           <Pressable
             onPress={handlePress}
-            style={({ pressed }) => [
-              styles.replayButton,
-              pressed && styles.replayButtonPressed,
-            ]}
+            style={({ pressed }) => [styles.replayBtn, pressed && styles.replayBtnPressed]}
           >
-            <Text style={styles.replayText}>RESTART_SYSTEM</Text>
+            <Ionicons name="refresh" size={20} color="#fff" />
+            <Text style={styles.replayText}>Play Again</Text>
           </Pressable>
         </Animated.View>
-
-        <Text style={styles.hint}>
-          {'> tap signal words — ignore the noise'}
-        </Text>
       </Animated.View>
     </Animated.View>
   );
@@ -129,115 +97,121 @@ const styles = StyleSheet.create({
     zIndex: 100,
     paddingHorizontal: 32,
   },
-  content: {
+  card: {
     width: '100%',
-    maxWidth: 340,
-    backgroundColor: '#050505',
-    borderWidth: 1,
-    borderColor: Colors.dangerDim,
-    borderRadius: 2,
-    padding: 28,
-    gap: 0,
+    maxWidth: 320,
+    backgroundColor: Colors.bgCard,
+    borderRadius: 28,
+    padding: 32,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.18,
+    shadowRadius: 40,
+    elevation: 20,
   },
-  sysLine: {
-    fontSize: 10,
-    color: Colors.danger,
-    fontFamily: MONO,
-    letterSpacing: 1,
-    opacity: 0.6,
-    marginBottom: 16,
+  iconRow: {
+    marginBottom: 20,
   },
-  errorBlock: {
-    marginBottom: 16,
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: Colors.dangerLight,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  errorCode: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: Colors.danger,
-    fontFamily: MONO,
-    letterSpacing: 2,
+  title: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: Colors.text,
+    letterSpacing: -0.5,
+    marginBottom: 4,
+  },
+  tagline: {
+    fontSize: 14,
+    color: Colors.textSec,
+    marginBottom: 24,
   },
   divider: {
+    width: '100%',
     height: 1,
-    backgroundColor: Colors.borderFaint,
-    marginVertical: 20,
+    backgroundColor: Colors.border,
+    marginBottom: 24,
   },
   scoreBlock: {
-    marginBottom: 14,
+    alignItems: 'center',
+    marginBottom: 16,
   },
   scoreLabel: {
-    fontSize: 10,
-    color: Colors.textFaint,
-    fontFamily: MONO,
-    letterSpacing: 4,
+    fontSize: 12,
+    fontWeight: '500',
+    color: Colors.textTer,
+    letterSpacing: 1.5,
     marginBottom: 4,
+    textTransform: 'uppercase',
   },
   scoreValue: {
-    fontSize: 72,
-    fontWeight: '900',
-    color: Colors.neon,
-    fontFamily: MONO,
-    lineHeight: 80,
+    fontSize: 64,
+    fontWeight: '800',
+    color: Colors.text,
+    lineHeight: 72,
+    letterSpacing: -2,
   },
   newBestBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: Colors.neon,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: Colors.accentLight,
+    borderRadius: 20,
     paddingHorizontal: 14,
-    paddingVertical: 5,
-    borderRadius: 2,
-    marginBottom: 4,
+    paddingVertical: 6,
+    marginBottom: 28,
   },
   newBestText: {
-    color: '#000000',
-    fontSize: 11,
-    fontWeight: '900',
-    fontFamily: MONO,
-    letterSpacing: 3,
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.accent,
   },
   bestRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 4,
+    alignItems: 'baseline',
+    gap: 6,
+    marginBottom: 28,
   },
   bestLabel: {
-    fontSize: 10,
-    color: Colors.textFaint,
-    fontFamily: MONO,
-    letterSpacing: 3,
+    fontSize: 13,
+    color: Colors.textTer,
+    fontWeight: '500',
   },
   bestValue: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
-    color: Colors.neonDim,
-    fontFamily: MONO,
+    color: Colors.textSec,
   },
-  replayButton: {
-    borderWidth: 1.5,
-    borderColor: Colors.neon,
+  btnWrap: {
+    width: '100%',
+  },
+  replayBtn: {
+    backgroundColor: Colors.accent,
+    borderRadius: 18,
     paddingVertical: 16,
+    flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 2,
-    marginBottom: 16,
+    justifyContent: 'center',
+    gap: 10,
+    shadowColor: Colors.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  replayButtonPressed: {
-    backgroundColor: Colors.neon,
+  replayBtnPressed: {
+    opacity: 0.88,
   },
   replayText: {
-    fontSize: 13,
-    fontWeight: '900',
-    fontFamily: MONO,
-    letterSpacing: 4,
-    color: Colors.neon,
-  },
-  replayTextPressed: {
-    color: '#000000',
-  },
-  hint: {
-    fontSize: 10,
-    color: Colors.textFaint,
-    fontFamily: MONO,
-    letterSpacing: 1,
-    textAlign: 'left',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#ffffff',
   },
 });
