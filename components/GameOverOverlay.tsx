@@ -15,9 +15,10 @@ type Props = {
   score: number;
   bestScore: number;
   onPlayAgain: () => void;
+  onBackToMenu: () => void;
 };
 
-export function GameOverOverlay({ score, bestScore, onPlayAgain }: Props) {
+export function GameOverOverlay({ score, bestScore, onPlayAgain, onBackToMenu }: Props) {
   const overlayOpacity = useSharedValue(0);
   const cardScale = useSharedValue(0.88);
   const cardOpacity = useSharedValue(0);
@@ -40,7 +41,8 @@ export function GameOverOverlay({ score, bestScore, onPlayAgain }: Props) {
     opacity: btnScale.value,
   }));
 
-  const handlePress = useCallback(() => onPlayAgain(), [onPlayAgain]);
+  const handlePlay = useCallback(() => onPlayAgain(), [onPlayAgain]);
+  const handleMenu = useCallback(() => onBackToMenu(), [onBackToMenu]);
   const isNewBest = score > 0 && score >= bestScore;
 
   return (
@@ -58,7 +60,7 @@ export function GameOverOverlay({ score, bestScore, onPlayAgain }: Props) {
         <View style={styles.divider} />
 
         <View style={styles.scoreBlock}>
-          <Text style={styles.scoreLabel}>Score</Text>
+          <Text style={styles.scoreLabel}>SCORE</Text>
           <Text style={styles.scoreValue}>{score}</Text>
         </View>
 
@@ -76,11 +78,21 @@ export function GameOverOverlay({ score, bestScore, onPlayAgain }: Props) {
 
         <Animated.View style={[styles.btnWrap, btnStyle]}>
           <Pressable
-            onPress={handlePress}
+            onPress={handlePlay}
             style={({ pressed }) => [styles.replayBtn, pressed && styles.replayBtnPressed]}
+            testID="play-again-button"
           >
             <Ionicons name="refresh" size={20} color="#fff" />
             <Text style={styles.replayText}>Play Again</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={handleMenu}
+            style={({ pressed }) => [styles.menuBtn, pressed && styles.menuBtnPressed]}
+            testID="back-to-menu-button"
+          >
+            <Ionicons name="home-outline" size={16} color={Colors.textSec} />
+            <Text style={styles.menuBtnText}>Back to Menu</Text>
           </Pressable>
         </Animated.View>
       </Animated.View>
@@ -144,12 +156,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   scoreLabel: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 11,
+    fontWeight: '600',
     color: Colors.textTer,
-    letterSpacing: 1.5,
+    letterSpacing: 2,
     marginBottom: 4,
-    textTransform: 'uppercase',
   },
   scoreValue: {
     fontSize: 64,
@@ -191,6 +202,7 @@ const styles = StyleSheet.create({
   },
   btnWrap: {
     width: '100%',
+    gap: 10,
   },
   replayBtn: {
     backgroundColor: Colors.accent,
@@ -213,5 +225,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#ffffff',
+  },
+  menuBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 13,
+    borderRadius: 18,
+    backgroundColor: Colors.bgSoft,
+  },
+  menuBtnPressed: {
+    opacity: 0.80,
+  },
+  menuBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textSec,
   },
 });

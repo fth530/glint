@@ -1,30 +1,54 @@
 import React, { useCallback, useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   useWindowDimensions,
   Platform,
   Pressable,
+  Text,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useSignalGame } from '@/hooks/useSignalGame';
+import { useSettings } from '@/hooks/useSettings';
 import { FallingWord } from '@/components/FallingWord';
 import { GameOverOverlay } from '@/components/GameOverOverlay';
-import { StartScreen } from '@/components/StartScreen';
+import { MainMenu } from '@/components/MainMenu';
+import { SettingsScreen } from '@/components/SettingsScreen';
 import { HowToPlayModal } from '@/components/HowToPlayModal';
 import Colors from '@/constants/colors';
+
+type AppScreen = 'menu' | 'game' | 'settings';
 
 export default function GameScreen() {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const [currentScreen, setCurrentScreen] = useState<AppScreen>('menu');
   const [showHelp, setShowHelp] = useState(false);
 
-  const { gameState, score, bestScore, words, startGame, tapWord, wordFellOff } =
-    useSignalGame(width);
+  const { hapticsEnabled, toggleHaptics } = useSettings();
+
+  const { gameState, score, bestScore, words, startGame, tapWord, wordFellOff, resetBestScore } =
+    useSignalGame(width, hapticsEnabled);
+
+  const goToGame = useCallback(() => {
+    startGame();
+    setCurrentScreen('game');
+  }, [startGame]);
+
+  const goToMenu = useCallback(() => {
+    setCurrentScreen('menu');
+  }, []);
+
+  const goToSettings = useCallback(() => {
+    setCurrentScreen('settings');
+  }, []);
+
+  const handlePlayAgain = useCallback(() => {
+    startGame();
+  }, [startGame]);
 
   const onTap = useCallback(
     (id: string, isSignal: boolean) => tapWord(id, isSignal),
@@ -46,11 +70,34 @@ export default function GameScreen() {
     <View style={styles.root}>
       <StatusBar style="dark" />
 
-      {gameState === 'playing' && (
+      {currentScreen === 'menu' && (
+        <View style={[styles.fill, { paddingTop: topPad, paddingBottom: botPad }]}>
+          <MainMenu
+            bestScore={bestScore}
+            onPlay={goToGame}
+            onHowToPlay={openHelp}
+            onSettings={goToSettings}
+          />
+        </View>
+      )}
+
+      {currentScreen === 'settings' && (
+        <SettingsScreen
+          hapticsEnabled={hapticsEnabled}
+          onToggleHaptics={toggleHaptics}
+          onResetBestScore={resetBestScore}
+          onBack={goToMenu}
+        />
+      )}
+
+      {currentScreen === 'game' && (
         <>
           <View style={[styles.hud, { paddingTop: topPad + 8 }]}>
-            <View style={styles.hudLeft}>
-              <Text style={styles.hudLabel}>Score</Text>
+            <Pressable onPress={goToMenu} style={styles.hudIconBtn} hitSlop={12}>
+              <Ionicons name="arrow-back" size={20} color={Colors.textSec} />
+            </Pressable>
+            <View style={styles.hudCenter}>
+              <Text style={styles.hudLabel}>SCORE</Text>
               <Text style={styles.hudScore}>{score}</Text>
             </View>
             <View style={styles.hudRight}>
@@ -63,7 +110,7 @@ export default function GameScreen() {
             </View>
           </View>
 
-          <View style={[styles.field, { pointerEvents: 'box-none' }]}>
+          <View style={styles.field}>
             {words.map((word) => (
               <FallingWord
                 key={word.id}
@@ -73,20 +120,17 @@ export default function GameScreen() {
                 onFallOff={onFallOff}
               />
             ))}
+
+            {gameState === 'gameover' && (
+              <GameOverOverlay
+                score={score}
+                bestScore={bestScore}
+                onPlayAgain={handlePlayAgain}
+                onBackToMenu={goToMenu}
+              />
+            )}
           </View>
         </>
-      )}
-
-      {gameState === 'idle' && (
-        <View style={[styles.startWrapper, { paddingTop: topPad, paddingBottom: botPad }]}>
-          <StartScreen bestScore={bestScore} onStart={startGame} onHelp={openHelp} />
-        </View>
-      )}
-
-      {gameState === 'gameover' && (
-        <View style={[styles.gameOverWrapper, { paddingTop: topPad, paddingBottom: botPad }]}>
-          <GameOverOverlay score={score} bestScore={bestScore} onPlayAgain={startGame} />
-        </View>
       )}
 
       <HowToPlayModal visible={showHelp} onClose={closeHelp} />
@@ -99,44 +143,43 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.bg,
   },
+  fill: {
+    flex: 1,
+  },
   hud: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     paddingBottom: 14,
     backgroundColor: Colors.bg,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
+    zIndex: 10,
   },
-  hudLeft: {
-    gap: 0,
+  hudCenter: {
+    alignItems: 'center',
+    flex: 1,
   },
   hudLabel: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 10,
+    fontWeight: '600',
     color: Colors.textTer,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
+    letterSpacing: 2,
     marginBottom: 2,
   },
   hudScore: {
-    fontSize: 36,
+    fontSize: 34,
     fontWeight: '800',
     color: Colors.text,
     letterSpacing: -1,
-    lineHeight: 40,
+    lineHeight: 38,
   },
   hudRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingBottom: 4,
+    gap: 8,
+    paddingBottom: 2,
   },
   hudLevel: {
     backgroundColor: Colors.accentLight,
@@ -161,13 +204,6 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
     overflow: 'hidden',
-    backgroundColor: Colors.bgSoft,
-  },
-  startWrapper: {
-    flex: 1,
-  },
-  gameOverWrapper: {
-    flex: 1,
     backgroundColor: Colors.bgSoft,
   },
 });

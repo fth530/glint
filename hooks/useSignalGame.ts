@@ -29,7 +29,7 @@ function genId(): string {
   return Date.now().toString() + Math.random().toString(36).substr(2, 9);
 }
 
-export function useSignalGame(screenWidth: number) {
+export function useSignalGame(screenWidth: number, hapticsEnabled: boolean) {
   const [gameState, setGameState] = useState<GameState>('idle');
   const [score, setScore] = useState(0);
   const [bestScore, setBestScore] = useState(0);
@@ -39,6 +39,11 @@ export function useSignalGame(screenWidth: number) {
   const spawnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPlayingRef = useRef(false);
   const activeIdsRef = useRef<Set<string>>(new Set());
+  const hapticsRef = useRef(hapticsEnabled);
+
+  useEffect(() => {
+    hapticsRef.current = hapticsEnabled;
+  }, [hapticsEnabled]);
 
   useEffect(() => {
     AsyncStorage.getItem(BEST_SCORE_KEY).then((val) => {
@@ -96,7 +101,9 @@ export function useSignalGame(screenWidth: number) {
       setGameState('gameover');
       setWords([]);
 
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+      if (hapticsRef.current) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+      }
 
       const best = await AsyncStorage.getItem(BEST_SCORE_KEY);
       const bestNum = best ? parseInt(best, 10) : 0;
@@ -114,7 +121,9 @@ export function useSignalGame(screenWidth: number) {
       if (!activeIdsRef.current.has(id)) return;
 
       if (isSignalWord) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+        if (hapticsRef.current) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+        }
         const newScore = scoreRef.current + 1;
         scoreRef.current = newScore;
         setScore(newScore);
@@ -154,6 +163,11 @@ export function useSignalGame(screenWidth: number) {
     }, 500);
   }, [clearSpawnTimer]);
 
+  const resetBestScore = useCallback(async () => {
+    await AsyncStorage.removeItem(BEST_SCORE_KEY);
+    setBestScore(0);
+  }, []);
+
   useEffect(() => {
     return () => {
       isPlayingRef.current = false;
@@ -161,5 +175,5 @@ export function useSignalGame(screenWidth: number) {
     };
   }, [clearSpawnTimer]);
 
-  return { gameState, score, bestScore, words, startGame, tapWord, wordFellOff };
+  return { gameState, score, bestScore, words, startGame, tapWord, wordFellOff, resetBestScore };
 }

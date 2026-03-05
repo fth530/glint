@@ -26,20 +26,31 @@ Every 5 points increases a "level":
 - Spawn interval decreases (min: 550ms)
 - Noise ratio increases (max: 72%)
 
+## App Flow
+
+Screen state managed in `app/index.tsx` via `const [currentScreen, setCurrentScreen] = useState<'menu' | 'game' | 'settings'>('menu')`:
+- **menu** → Main Menu (default boot screen)
+- **game** → Game field + HUD; GameOverOverlay shown when `gameState === 'gameover'`
+- **settings** → Settings screen (haptics toggle, reset score)
+
 ## Project Structure
 
 ```
 app/
-  _layout.tsx          # Root layout (Stack, no tabs)
-  index.tsx            # Main game screen
+  _layout.tsx            # Root layout (Stack, SafeAreaProvider, GestureHandlerRootView)
+  index.tsx              # App screen router (menu / game / settings)
 components/
-  FallingWord.tsx      # Animated word (memoized, own Reanimated animation)
-  GameOverOverlay.tsx  # Game over modal with spring-animated button
-  StartScreen.tsx      # Idle/start screen
-  ErrorBoundary.tsx    # Error boundary
-  ErrorFallback.tsx    # Error fallback UI
+  MainMenu.tsx           # Boot screen: title, best score, PLAY / HOW TO PLAY / SETTINGS
+  SettingsScreen.tsx     # Haptic toggle + Reset Best Score
+  FallingWord.tsx        # Animated word chip (memoized, GestureDetector tap)
+  GameOverOverlay.tsx    # Centered card with Play Again + Back to Menu
+  HowToPlayModal.tsx     # Bottom sheet with signal/noise word reference
+  StartScreen.tsx        # (legacy, no longer rendered)
+  ErrorBoundary.tsx      # Error boundary
+  ErrorFallback.tsx      # Error fallback UI
 hooks/
-  useSignalGame.ts     # Core game logic: state, spawning, difficulty, haptics
+  useSignalGame.ts       # Game logic: state, spawning, difficulty, haptics, resetBestScore
+  useSettings.ts         # Haptic preference persisted to AsyncStorage
 ```
 
 ## Visual Design
