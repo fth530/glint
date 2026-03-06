@@ -17,6 +17,7 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/constants/colors';
+import { WEB_TOP_PAD, WEB_BOT_PAD } from '@/constants/layout';
 
 type Props = {
   hapticsEnabled: boolean;
@@ -47,8 +48,8 @@ export function SettingsScreen({
     transform: [{ translateX: slideIn.value }],
   }));
 
-  const topPad = Platform.OS === 'web' ? 67 : insets.top;
-  const botPad = Platform.OS === 'web' ? 34 : insets.bottom;
+  const topPad = Platform.OS === 'web' ? WEB_TOP_PAD : insets.top;
+  const botPad = Platform.OS === 'web' ? WEB_BOT_PAD : insets.bottom;
 
   const handleBack = useCallback(() => onBack(), [onBack]);
 

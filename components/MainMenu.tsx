@@ -44,9 +44,7 @@ export function MainMenu({ bestScore, onPlay, onHowToPlay, onSettings }: Props) 
     <View style={styles.container}>
       <Animated.View style={[styles.inner, contentStyle]}>
         <View style={styles.titleBlock}>
-          <Text style={styles.titleLine1}>SIGNAL</Text>
-          <Text style={styles.titleVs}>vs</Text>
-          <Text style={styles.titleLine2}>NOISE</Text>
+          <Text style={styles.titleLine1}>GLINT</Text>
         </View>
 
         {bestScore > 0 && (
@@ -108,21 +106,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: Colors.accent,
     lineHeight: 58,
-    letterSpacing: -1,
-  },
-  titleVs: {
-    fontSize: 18,
-    fontWeight: '400',
-    color: Colors.textTer,
     letterSpacing: 2,
-    marginVertical: 2,
-  },
-  titleLine2: {
-    fontSize: 52,
-    fontWeight: '900',
-    color: Colors.danger,
-    lineHeight: 58,
-    letterSpacing: -1,
   },
   bestBlock: {
     flexDirection: 'row',

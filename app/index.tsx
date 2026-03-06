@@ -19,6 +19,8 @@ import { MainMenu } from '@/components/MainMenu';
 import { SettingsScreen } from '@/components/SettingsScreen';
 import { HowToPlayModal } from '@/components/HowToPlayModal';
 import Colors from '@/constants/colors';
+import { getLevel } from '@/constants/game';
+import { WEB_TOP_PAD, WEB_BOT_PAD } from '@/constants/layout';
 
 type AppScreen = 'menu' | 'game' | 'settings';
 
@@ -63,8 +65,8 @@ export default function GameScreen() {
   const openHelp = useCallback(() => setShowHelp(true), []);
   const closeHelp = useCallback(() => setShowHelp(false), []);
 
-  const topPad = Platform.OS === 'web' ? 67 : insets.top;
-  const botPad = Platform.OS === 'web' ? 34 : insets.bottom;
+  const topPad = Platform.OS === 'web' ? WEB_TOP_PAD : insets.top;
+  const botPad = Platform.OS === 'web' ? WEB_BOT_PAD : insets.bottom;
 
   return (
     <View style={styles.root}>
@@ -102,7 +104,7 @@ export default function GameScreen() {
             </View>
             <View style={styles.hudRight}>
               <View style={styles.hudLevel}>
-                <Text style={styles.hudLevelText}>Lv {Math.floor(score / 5) + 1}</Text>
+                <Text style={styles.hudLevelText}>Lv {getLevel(score)}</Text>
               </View>
               <Pressable onPress={openHelp} style={styles.hudIconBtn} hitSlop={12}>
                 <Ionicons name="help-circle-outline" size={22} color={Colors.textSec} />

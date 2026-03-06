@@ -10,9 +10,8 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/constants/colors';
-
-const SIGNALS = ['KEDİ', 'KÖPEK', 'TAVŞAN', 'ASLAN', 'KAPLAN', 'KARTAL'];
-const NOISES = ['K3Dİ', 'D0G', 'KÖP3K', 'T4VŞAN', 'A5LAN', 'MASA', 'ELMA'];
+import { SIGNALS, EXAMPLE_NOISES as NOISES } from '@/constants/game';
+import { WEB_BOT_PAD } from '@/constants/layout';
 
 type Props = {
   visible: boolean;
@@ -41,7 +40,7 @@ export function HowToPlayModal({ visible, onClose }: Props) {
 
   const handleClose = useCallback(() => onClose(), [onClose]);
 
-  const botPad = Platform.OS === 'web' ? 34 : insets.bottom;
+  const botPad = Platform.OS === 'web' ? WEB_BOT_PAD : insets.bottom;
 
   return (
     <Modal
