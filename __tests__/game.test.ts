@@ -49,11 +49,23 @@ describe('getLevel', () => {
 });
 
 describe('getDifficulty', () => {
-    it('should scale linearly per level (every 5 points)', () => {
+    it('should get harder as score increases', () => {
         const level0 = getDifficulty(0);
         const level1 = getDifficulty(5);
+        const level5 = getDifficulty(25);
+        const level20 = getDifficulty(100);
 
-        expect(level0.fallDuration - level1.fallDuration).toBe(220);
-        expect(level1.noiseRatio - level0.noiseRatio).toBeCloseTo(0.05);
+        // Fall duration decreases
+        expect(level1.fallDuration).toBeLessThan(level0.fallDuration);
+        expect(level5.fallDuration).toBeLessThan(level1.fallDuration);
+
+        // Noise ratio increases
+        expect(level1.noiseRatio).toBeGreaterThan(level0.noiseRatio);
+        expect(level5.noiseRatio).toBeGreaterThan(level1.noiseRatio);
+
+        // Never reaches absolute minimum — always room to get harder
+        expect(level20.fallDuration).toBeGreaterThan(1000);
+        expect(level20.spawnInterval).toBeGreaterThan(400);
+        expect(level20.noiseRatio).toBeLessThan(0.76);
     });
 });

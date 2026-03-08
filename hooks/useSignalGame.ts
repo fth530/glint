@@ -11,7 +11,12 @@ export type WordItem = {
   fallDuration: number;
 };
 
-export type GameState = 'idle' | 'playing' | 'gameover';
+export type GameState = 'idle' | 'playing' | 'paused' | 'gameover';
+
+export type DeathReason = {
+  type: 'tapped_noise' | 'missed_signal';
+  word: string;
+} | null;
 
 const BEST_SCORE_KEY = '@svn_best_score';
 
@@ -25,6 +30,9 @@ type State = {
   score: number;
   bestScore: number;
   words: WordItem[];
+  deathReason: DeathReason;
+  combo: number;
+  maxCombo: number;
 };
 
 type Action =
@@ -33,30 +41,42 @@ type Action =
   | { type: 'SPAWN_WORD'; word: WordItem }
   | { type: 'REMOVE_WORD'; id: string }
   | { type: 'TAP_SIGNAL'; id: string }
-  | { type: 'GAME_OVER'; bestScore?: number };
+  | { type: 'PAUSE_GAME' }
+  | { type: 'RESUME_GAME' }
+  | { type: 'GAME_OVER'; bestScore?: number; deathReason: DeathReason };
 
 function gameReducer(state: State, action: Action): State {
   switch (action.type) {
     case 'SET_BEST_SCORE':
       return { ...state, bestScore: action.score };
     case 'START_GAME':
-      return { ...state, gameState: 'playing', score: 0, words: [] };
+      return { ...state, gameState: 'playing', score: 0, words: [], deathReason: null, combo: 0, maxCombo: 0 };
     case 'SPAWN_WORD':
       return { ...state, words: [...state.words, action.word] };
     case 'REMOVE_WORD':
       return { ...state, words: state.words.filter((w) => w.id !== action.id) };
-    case 'TAP_SIGNAL':
+    case 'TAP_SIGNAL': {
+      const newCombo = state.combo + 1;
+      const bonus = newCombo > 0 && newCombo % 5 === 0 ? 1 : 0;
       return {
         ...state,
-        score: state.score + 1,
+        score: state.score + 1 + bonus,
+        combo: newCombo,
+        maxCombo: Math.max(state.maxCombo, newCombo),
         words: state.words.filter((w) => w.id !== action.id),
       };
+    }
+    case 'PAUSE_GAME':
+      return { ...state, gameState: 'paused' };
+    case 'RESUME_GAME':
+      return { ...state, gameState: 'playing' };
     case 'GAME_OVER':
       return {
         ...state,
         gameState: 'gameover',
         words: [],
         bestScore: action.bestScore ?? state.bestScore,
+        deathReason: action.deathReason,
       };
     default:
       return state;
@@ -69,9 +89,13 @@ export function useSignalGame(screenWidth: number, hapticsEnabled: boolean) {
     score: 0,
     bestScore: 0,
     words: [],
+    deathReason: null,
+    combo: 0,
+    maxCombo: 0,
   });
 
-  const scoreRef = useRef(0); // For sync access inside setTimeout handlers
+  const scoreRef = useRef(0);
+  const comboRef = useRef(0);
   const spawnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPlayingRef = useRef(false);
   const activeIdsRef = useRef<Set<string>>(new Set());
@@ -106,6 +130,8 @@ export function useSignalGame(screenWidth: number, hapticsEnabled: boolean) {
     }, spawnInterval);
   }, []);
 
+  const recentXRef = useRef<number[]>([]);
+
   const spawnWord = useCallback(() => {
     if (!isPlayingRef.current) return;
 
@@ -114,8 +140,21 @@ export function useSignalGame(screenWidth: number, hapticsEnabled: boolean) {
     const baseWord = SIGNALS[Math.floor(Math.random() * SIGNALS.length)];
     const text = isSignal ? baseWord : generateNoiseWord(baseWord);
     const id = genId();
-    const WORD_WIDTH = 168; // Based on FallingWord styles
-    const x = WORD_WIDTH / 2 + Math.random() * (screenWidth - WORD_WIDTH);
+    const WORD_WIDTH = 168;
+    const minX = WORD_WIDTH / 2;
+    const maxX = screenWidth - WORD_WIDTH / 2;
+
+    // Try to find a non-overlapping X position (max 5 attempts)
+    let x = minX + Math.random() * (maxX - minX);
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const overlaps = recentXRef.current.some((rx) => Math.abs(rx - x) < WORD_WIDTH);
+      if (!overlaps) break;
+      x = minX + Math.random() * (maxX - minX);
+    }
+
+    // Track recent X positions, keep only last 3
+    recentXRef.current.push(x);
+    if (recentXRef.current.length > 3) recentXRef.current.shift();
 
     activeIdsRef.current.add(id);
     dispatch({ type: 'SPAWN_WORD', word: { id, text, isSignal, x, fallDuration } });
@@ -132,7 +171,7 @@ export function useSignalGame(screenWidth: number, hapticsEnabled: boolean) {
   }, []);
 
   const triggerGameOver = useCallback(
-    async () => {
+    async (reason: DeathReason) => {
       isPlayingRef.current = false;
       clearSpawnTimer();
       activeIdsRef.current.clear();
@@ -155,13 +194,13 @@ export function useSignalGame(screenWidth: number, hapticsEnabled: boolean) {
         console.log('AsyncStorage set err:', e);
       }
 
-      dispatch({ type: 'GAME_OVER', bestScore: newBest });
+      dispatch({ type: 'GAME_OVER', bestScore: newBest, deathReason: reason });
     },
     [clearSpawnTimer],
   );
 
   const tapWord = useCallback(
-    (id: string, isSignalWord: boolean) => {
+    (id: string, isSignalWord: boolean, wordText?: string) => {
       if (!isPlayingRef.current) return;
       if (!activeIdsRef.current.has(id)) return;
 
@@ -169,23 +208,27 @@ export function useSignalGame(screenWidth: number, hapticsEnabled: boolean) {
         if (hapticsRef.current) {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
         }
-        scoreRef.current += 1; // Update ref explicitly
+        // combo is 0-indexed before this tap, so +1 to get current combo
+        const comboAfter = comboRef.current + 1;
+        const bonus = comboAfter > 0 && comboAfter % 5 === 0 ? 1 : 0;
+        scoreRef.current += 1 + bonus;
+        comboRef.current = comboAfter;
         activeIdsRef.current.delete(id);
         dispatch({ type: 'TAP_SIGNAL', id });
       } else {
-        triggerGameOver();
+        triggerGameOver({ type: 'tapped_noise', word: wordText ?? '???' });
       }
     },
     [triggerGameOver],
   );
 
   const wordFellOff = useCallback(
-    (id: string, isSignalWord: boolean) => {
+    (id: string, isSignalWord: boolean, wordText?: string) => {
       if (!isPlayingRef.current) return;
       if (!activeIdsRef.current.has(id)) return;
 
       if (isSignalWord) {
-        triggerGameOver();
+        triggerGameOver({ type: 'missed_signal', word: wordText ?? '???' });
       } else {
         removeWord(id);
       }
@@ -196,7 +239,9 @@ export function useSignalGame(screenWidth: number, hapticsEnabled: boolean) {
   const startGame = useCallback(() => {
     clearSpawnTimer();
     activeIdsRef.current.clear();
+    recentXRef.current = [];
     scoreRef.current = 0;
+    comboRef.current = 0;
     isPlayingRef.current = true;
 
     dispatch({ type: 'START_GAME' });
@@ -205,6 +250,21 @@ export function useSignalGame(screenWidth: number, hapticsEnabled: boolean) {
       spawnWordRef.current();
     }, 500);
   }, [clearSpawnTimer]);
+
+  const pauseGame = useCallback(() => {
+    if (!isPlayingRef.current) return;
+    isPlayingRef.current = false;
+    clearSpawnTimer();
+    dispatch({ type: 'PAUSE_GAME' });
+  }, [clearSpawnTimer]);
+
+  const resumeGame = useCallback(() => {
+    isPlayingRef.current = true;
+    dispatch({ type: 'RESUME_GAME' });
+    setTimeout(() => {
+      spawnWordRef.current();
+    }, 500);
+  }, []);
 
   const resetBestScore = useCallback(async () => {
     try {
@@ -227,9 +287,14 @@ export function useSignalGame(screenWidth: number, hapticsEnabled: boolean) {
     score: state.score,
     bestScore: state.bestScore,
     words: state.words,
+    deathReason: state.deathReason,
+    combo: state.combo,
+    maxCombo: state.maxCombo,
     startGame,
+    pauseGame,
+    resumeGame,
     tapWord,
     wordFellOff,
-    resetBestScore
+    resetBestScore,
   };
 }
