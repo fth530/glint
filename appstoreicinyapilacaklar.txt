@@ -1,0 +1,559 @@
+==============================================================
+  GLINT - Gerçeği Yakala, Sahteyi Geç
+  App Store Yayın Öncesi Yapılacaklar Listesi
+  Tarih: 8 Mart 2026
+==============================================================
+
+
+[1] KRİTİK - YAPILMAZSA RED GELİR
+--------------------------------------------------------------
+
+1.1 Bundle Identifier Değiştir *** EN SON YAPILACAK ***
+    Dosya: app.json
+    Mevcut: "bundleIdentifier": "com.signalvsnoise"
+    Yapılacak: "com.corut.glint" gibi gerçek, benzersiz bir identifier yaz.
+    Android package da aynı şekilde değişmeli (mevcut: "com.signalvsnoise").
+
+    NOT: Diğer tüm maddeler tamamlandıktan sonra en son adım olarak yapılacak.
+    Önce Apple Developer Portal'da Certificates, Identifiers & Profiles →
+    Identifiers → "+" ile yeni Bundle ID oluştur, sonra app.json'a yaz.
+
+1.2 Scheme Değiştir
+    Dosya: app.json
+    Mevcut: "scheme": "signalvsnoise"
+    Yapılacak: "scheme": "glint"
+    Deep link'ler bu scheme üzerinden çalışır, uygulama adıyla tutarlı olmalı.
+
+1.3 Gizlilik Politikası (Privacy Policy)
+    Apple mutlaka bir Privacy Policy URL'i istiyor.
+    Uygulama lokal veri tutuyor (AsyncStorage ile skor, ayarlar, istatistikler).
+    Basit bir gizlilik politikası sayfası oluşturup URL'ini
+    App Store Connect'e eklemelisin.
+    Notion, GitHub Pages veya kendi siten üzerinden yayınlayabilirsin.
+    KVKK, GDPR, CCPA uyumlu olması stratejik avantaj sağlar.
+
+    İçermesi gereken bilgiler:
+    - Uygulama hiçbir kişisel veri toplamıyor
+    - Tüm veriler (skor, ayarlar, istatistikler) cihazda lokal kalıyor
+    - Üçüncü parti servislere veri gönderilmiyor
+    - İletişim bilgileri
+
+1.4 Yaş Derecelendirmesi (Age Rating)
+    Ocak 2026'da yeni yaş sistemi geldi: 4+, 9+, 13+, 16+, 18+
+    App Store Connect'te güncel yaş derecelendirme sorularını cevaplamalısın.
+    Bu oyun: şiddet yok, kumar yok, korkutucu içerik yok → 4+ kategorisi.
+
+1.5 iOS Build Number Ekle
+    Dosya: app.json → ios
+    App Store her yüklemede artan bir buildNumber ister.
+    Eklenecek: "buildNumber": "1"
+    Her yeni build'de bu numara artırılmalı.
+
+1.6 Destek ve İletişim URL'leri
+    - App Store Connect'e geçerli bir destek e-postası veya web sitesi girilmeli.
+    - Bozuk linkler bile reddedilme sebebi olabiliyor.
+    - Gizlilik politikası URL'i ile aynı domain'de olması güzel görünür.
+
+
+[2] ÖNEMLİ - YAPILMAZSA RED RİSKİ VAR
+--------------------------------------------------------------
+
+2.1 Kullanılmayan Bağımlılıkları Temizle
+    Şu paketler yüklü ama kullanılmıyor olabilir:
+    - expo-web-browser (plugins'te var ama kodda kullanılıyor mu kontrol et)
+    - react-native-svg (kullanılıyor mu kontrol et)
+    - @expo-google-fonts/inter (font yüklenmiş mi kontrol et)
+    Apple gereksiz izin isteyen veya şişirilmiş uygulamaları reddedebiliyor.
+    Kullanılmayanları kaldır: npm uninstall <paket-adı>
+    app.json plugins'ten de expo-web-browser'ı kaldır.
+
+2.2 EAS Build Yapılandırması Oluştur
+    eas.json dosyası yok. App Store'a göndermek için gerekli.
+    Komut: npx eas-cli init && npx eas build:configure
+    Ardından eas.json'da production profili ayarlanmalı:
+    {
+      "build": {
+        "production": {
+          "ios": { "buildNumber": "1" }
+        }
+      }
+    }
+
+2.3 Nisan 2026 SDK Gerekliliği
+    28 Nisan 2026'dan itibaren uygulamalar iOS 26 SDK ile build edilmeli.
+    Şu an Expo SDK 54 kullanılıyor (React Native 0.81.5).
+    Expo'nun iOS 26 SDK destekleyen sürümüne geçiş gerekecek.
+    Expo blog ve changelog takip edilmeli.
+
+2.4 Uygulama Stabilitesi
+    - Uygulama herhangi bir anda çöküyorsa reddedilir.
+    - Farklı iPhone modellerinde ekran bozulması, uyumsuz UI reddedilme sebebi.
+    - Arka plana atıp geri gelme senaryosu düzgün çalışmalı.
+    - Düşük bellek durumunda crash olmamalı.
+    - Bilinen sorun: react-native-worklets versiyon uyumsuzluğu
+      (JS 0.7.4 vs native 0.5.1) — production build'de sorun çıkarabilir.
+
+2.5 Splash Screen Güncelle
+    Dosya: app.json → splash
+    Mevcut: backgroundColor "#FFFFFF"
+    Dark mode'da beyaz splash → siyah uygulama geçişi kötü görünür.
+    userInterfaceStyle "automatic" yapılabilir veya
+    koyu arka planlı splash ekranı da hazırlanmalı.
+
+
+[3] UI/UX ve Apple Tasarım Kriterleri
+--------------------------------------------------------------
+
+Apple tasarım ve UX kalitesine çok önem veriyor. Bunlar itiraz ve
+reddi azaltır:
+
+3.1 iOS Human Interface Guidelines Uyumu
+    - Navigation açık ve anlaşılır olmalı.
+    - Düğmeler sıkışık veya çarpık görünmemeli.
+    - Dokunmatik hissiyat, çerçeve/constraint uyumu sağlanmalı.
+
+3.2 Tamamlanmamış Özellik Kontrolü
+    - Her ekran teste hazır olmalı.
+    - Loading, error, empty state ekranları düzgün gösterilmeli.
+    - Hatalı placeholder veya boş ekranlar reddedilme sebebi.
+
+3.3 Mevcut Durum (Bu Projede)
+    [OK] Safe area insets doğru uygulanmış
+    [OK] Reanimated ile 60/120 FPS animasyonlar
+    [OK] Dark mode / Light mode desteği
+    [OK] Haptic feedback sistemi
+    [OK] Türkçe UI tam lokalizasyon
+    [OK] Pause/resume düzgün çalışıyor (kelimeler donuyor)
+    [OK] Combo sistemi ve level-up banner
+    [EKSİK] Ses efektleri (kullanıcı dosyaları verecek)
+    [EKLENEBİLİR] Ekranlar arası geçiş animasyonları
+    [EKLENEBİLİR] Doğru tap'te parçacık efekti
+    [EKLENEBİLİR] Game over'da screen shake
+    [EKLENEBİLİR] Dynamic Type desteği
+    [EKLENEBİLİR] VoiceOver tam uyumluluk testi
+
+
+[4] Meta Veri & App Store Asset'leri
+--------------------------------------------------------------
+
+Uygulamanın mağazada ilk izlenim yaratacak tüm görselleri:
+
+4.1 App İkon
+    - 1024x1024 PNG (mevcut: assets/images/icon.png)
+    - Glint temasına uygun, yeşil tonlarda, kelime oyunu hissi veren ikon
+    - Dosya boyutunu optimize et (TinyPNG ile)
+
+4.2 Ekran Görüntüleri (Zorunlu)
+    - 6.7" iPhone screenshot'ları (iPhone 15 Pro Max) — zorunlu
+    - 6.1" iPhone screenshot'ları — zorunlu
+    - En az 3-5 screenshot:
+      * Ana menü ekranı
+      * Oyun ekranı (kelimeler düşerken)
+      * Combo aktifken oyun ekranı
+      * Game over ekranı (iyi skor ile)
+      * Level-up anı
+    - Screenshot'lar gerçek uygulama ile uyumlu olmalı
+    - Yanıltıcı screenshot'lar reddedilme sebebi
+
+4.3 Uygulama Açıklaması
+    Türkçe açıklama örneği:
+    "Glint, reflekslerini ve dikkatini test eden heyecanlı bir kelime oyunu!
+    Ekranın üstünden düşen kelimeleri izle — gerçek Türkçe kelimelere dokun,
+    sahte olanlardan kaçın. Seviye atlayarak zorluk artar, combo yaparak
+    bonus puan kazan. Ne kadar ileri gidebilirsin?"
+
+    İngilizce açıklama da hazırlanmalı (global pazar için).
+
+4.4 Tanıtım Videosu (Opsiyonel ama Etkili)
+    - 30 saniyelik App Preview videosu
+    - Oynanış gösterimi: kelimeler düşüyor, doğru tap, combo, level up
+    - Dönüşüm oranını ciddi artırır
+
+4.5 Anahtar Kelimeler
+    - kelime oyunu, türkçe, refleks, beyin egzersizi, dikkat oyunu,
+      word game, brain training, hızlı düşünme, kelime bulmaca,
+      glitch, signal, noise, combo
+
+
+[5] UYGULAMA İÇİ YAPILACAKLAR (Profesyonellik)
+--------------------------------------------------------------
+
+5.1 Ses Efektleri (Planlandı - Dosyalar Bekleniyor)
+    - Oyun başlangıç sesi
+    - Doğru kelimeye dokunma sesi
+    - Yanlış kelimeye dokunma sesi
+    - Combo sesi (5x, 10x, 15x...)
+    - Level up sesi
+    - Game over sesi
+    - expo-av ile implement edilecek
+    - Ayarlardan açma/kapama kontrolü eklenecek
+
+5.2 Ekranlar Arası Geçiş Animasyonları
+    - Menü → Oyun: fade + scale geçişi
+    - Oyun → Game Over: shake + fade
+    - Game Over → Menü: smooth fade
+    - Conditional render yerine animated transitions
+
+5.3 Doğru Tap Parçacık Efekti
+    - Doğru kelimeye dokunduğunda küçük yeşil spark/konfeti patlaması
+    - Profesyonel oyun hissi verir
+
+5.4 Game Over Screen Shake
+    - Öldüğünde hafif bir ekran sarsıntısı
+    - Daha dramatik ve etkili game over deneyimi
+
+5.5 Haptics İyileştirme
+    - Combo 5x'te farklı titreşim pattern'i
+    - Level up'ta özel titreşim
+    - Game over'da ağır titreşim (zaten var)
+
+
+[6] Güvenlik ve Kod Gereksinimleri
+--------------------------------------------------------------
+
+6.1 Kod İmzalama
+    - Uygulama doğru Apple sertifikalarıyla imzalanmalı.
+    - EAS Build bu işi otomatik yapar.
+    - Apple Developer hesabında sertifikaların güncel olduğunu kontrol et.
+
+6.2 Şifreleme Beyanı
+    - HTTPS kullanan uygulamalar şifreleme beyanı gerektirebilir.
+    - Bu uygulama sadece AsyncStorage kullanıyor, ağ isteği yok.
+    - App Store Connect'te "Export Compliance" → "No" cevabı verilebilir.
+
+6.3 SDK Güvenliği ve Privacy Labels
+    - Entegre edilen SDK'ların privacy etiketlerini doldur.
+    - Bu uygulama veri toplamıyor → "Data Not Collected" seçilebilir.
+    - expo-haptics, expo-linear-gradient gibi SDK'lar ek izin istemiyor.
+
+
+[7] Monetizasyon Politikaları (Gelecek İçin)
+--------------------------------------------------------------
+
+Şu an uygulama ücretsiz ve IAP yok, ancak ileride eklenirse:
+
+7.1 Apple IAP Kuralları
+    - Dijital içerikler için üçüncü parti ödeme kabul edilemez.
+    - Apple'ın In-App Purchase sistemi zorunlu.
+    - Abonelik varsa: restore purchases ve subscription info UI'ları şart.
+
+7.2 Reklam Eklenirse
+    - ATT (App Tracking Transparency) izni zorunlu.
+    - Privacy Labels güncellenmeli.
+    - Info.plist'e NSUserTrackingUsageDescription eklenmeli.
+
+7.3 Olası Gelir Modelleri
+    - Reklam destekli ücretsiz (AdMob, Unity Ads)
+    - Premium (ücretli indirme, reklamsız)
+    - Freemium (ek tema paketleri, özel modlar IAP ile)
+
+
+[8] Sürüm Yönetimi ve Güncellemeler
+--------------------------------------------------------------
+
+8.1 Her güncelleme yeniden review sürecine girer.
+8.2 Semantic versioning kullan: major.minor.patch (1.0.0, 1.0.1, 1.1.0)
+8.3 buildNumber her submission'da artırılmalı.
+8.4 Hotfix / patch sürümleri için TestFlight + phased release kullan.
+8.5 Rollback stratejisi belirle.
+8.6 OTA Update: Expo Updates ile JS bundle güncellemeleri
+    review sürecine girmeden yapılabilir (küçük düzeltmeler için).
+
+
+[9] Test Checklist - Reject Almamak İçin
+--------------------------------------------------------------
+
+[  ] TestFlight'a yükle, en az 3-5 farklı cihazda test et
+[  ] iPhone SE (küçük ekran), iPhone 15 Pro Max (büyük ekran)
+[  ] Oyunu hızlı hızlı oyna, kenar durumları test et
+[  ] 50+ skor yapana kadar oyna (yüksek zorluk seviyesi)
+[  ] Arka plana atıp geri gel — crash olmamalı
+[  ] Pause halinde arka plana at, geri gel — kelimeler durmalı
+[  ] Memory leak kontrolü yap (uzun süre oynayınca)
+[  ] Ses açık/kapalı geçişleri test et (ses eklendiğinde)
+[  ] Haptic açık/kapalı geçişleri test et
+[  ] Ayarlar değişiklikleri kalıcı mı kontrol et
+[  ] İstatistikler 0 oyun ve 20+ oyunda düzgün mü
+[  ] "Verileri Sıfırla" düzgün çalışıyor mu
+[  ] Dark mode / Light mode geçişi test et
+[  ] Game over'da paylaşım butonu çalışıyor mu
+[  ] How to Play modal'ı düzgün açılıp kapanıyor mu
+[  ] Level up banner'ı doğru zamanda görünüyor mu
+[  ] Combo sayacı doğru çalışıyor mu (5x bonus)
+[  ] En iyi skor doğru kaydediliyor mu
+[  ] Uygulama ilk açılışta (sıfır veri) düzgün görünüyor mu
+
+
+[10] App Store Optimization (ASO)
+--------------------------------------------------------------
+
+10.1 Başlık ve Alt Başlık Optimizasyonu
+     - Başlık: "Glint - Kelime Refleks Oyunu"
+     - Alt başlık: "Gerçeği Yakala, Sahteyi Geç"
+     - Anahtar kelimeleri başlığa doğal şekilde yerleştir
+
+10.2 Anahtar Kelime Stratejisi
+     - Hedef: kelime oyunu, refleks, beyin egzersizi, dikkat, türkçe oyun
+     - Rakiplerin boş bıraktığı niş ifadeleri hedefle
+     - "Glitch kelime", "sahte kelime oyunu" gibi benzersiz terimler
+
+10.3 Creative Optimization
+     - Segment bazlı screenshot'lar üret
+     - A/B test ile hangi görsellerin CVR artırdığını ölç
+     - İlk 3 screenshot en önemli — oynanışı net göstermeli
+
+10.4 In-App Events (Apple Feature Signals)
+     - Apple In-App Events kullan → küratör listelerde görünme şansı
+     - Sezonluk temalar (yaz challenge, yılbaşı özel modu vs.)
+     - Haftalık/aylık turnuva etkinlikleri
+
+
+[11] Pazarlama ve Growth (Launch Sonrası)
+--------------------------------------------------------------
+
+11.1 Launch Kampanyası
+     - ASO stratejisiyle eş zamanlı yürüt
+     - Landing page hazırla (opsiyonel)
+
+11.2 Sosyal Medya
+     - TikTok / Instagram Reels odaklı hızlı içerik
+     - "Bu sahte kelimeleri ayırt edebilir misin?" tarzı challenge videoları
+     - Yüksek skor paylaşım özelliği zaten var — viral potansiyel
+
+11.3 Apple Search Ads
+     - İlk organik sıralamayı desteklemek için kullan
+     - Düşük bütçeyle başla, dönüşüm veren kelimeleri organik ASO'ya aktar
+
+
+[12] UYGULAMA CİLASI - DAHA ŞIK VE PROFESYONEL İÇİN
+--------------------------------------------------------------
+
+Aşağıdakiler App Store için zorunlu değil ama uygulamanın "indie" den
+"premium" hissine geçmesini sağlayacak dokunuşlar. Öncelik sırasına göre:
+
+--- A. ANİMASYON & HİSSİYAT (En Çok Fark Yaratan) ---
+
+12.1 Ekranlar Arası Geçiş Animasyonları
+     Şu an menü → oyun → ayarlar geçişleri keskin (conditional render).
+     Fade + slide animasyon eklenirse "cilalı uygulama" hissi verir.
+     React Native Reanimated layout animations veya
+     shared element transitions kullanılabilir.
+     Zorluk: Orta | Etki: Yüksek
+
+12.2 Doğru Tap'te Parçacık (Spark) Efekti
+     Doğru kelimeye dokunduğunda yeşil mini konfeti/spark patlaması.
+     5-8 adet küçük daire dışa doğru yayılıp kaybolur.
+     Reanimated ile lightweight implementasyon yapılabilir.
+     Zorluk: Orta | Etki: Yüksek
+
+12.3 Game Over Screen Shake
+     Öldüğünde tüm ekranın 300ms hafif sarsılması.
+     Reanimated withSequence ile basit implementasyon.
+     Dramatik etki, kullanıcı "vay" der.
+     Zorluk: Kolay | Etki: Yüksek
+
+12.4 Kelime Kartlarına Giriş Animasyonu
+     Kelimeler şu an yukarıdan doğrudan düşüyor.
+     Spawn olurken küçük bir scale-in (0.8 → 1.0) + fade-in eklenirse
+     daha organik görünür.
+     Zorluk: Kolay | Etki: Orta
+
+12.5 Buton Basma Haptik Geri Bildirimi
+     Ana menü butonlarına basınca hafif titreşim eklenebilir.
+     Şu an sadece oyun içi tap'lerde haptic var.
+     Zorluk: Kolay | Etki: Düşük-Orta
+
+--- B. GÖRSEL TASARIM (Profesyonel İzlenim) ---
+
+12.6 Custom Font (Tipografi)
+     Sistem fontu yerine özel font kullanmak uygulamayı anında
+     "tasarlanmış" gösterir. Öneriler:
+     - Başlık: Space Grotesk veya Outfit (Bold/Black)
+     - Gövde: Inter veya DM Sans
+     @expo-google-fonts zaten yüklü, Inter mevcut.
+     Zorluk: Kolay | Etki: Yüksek
+
+12.7 Kelime Kartı Tasarım Varyasyonları
+     Şu an tüm kartlar aynı görünüyor (beyaz kutu).
+     Signal ve Noise kartların arasında görsel ipucu OLMAMALI (oyunun amacı bu)
+     ama kartların genel tasarımı daha ilginç olabilir:
+     - Hafif gradient arka plan
+     - İnce iç gölge (inner shadow hissi)
+     - Mikro doku (subtle noise texture)
+     Zorluk: Kolay | Etki: Orta
+
+12.8 Ana Menüde Arka Plan Animasyonu
+     Floating dot'lar statik duruyor. Bunlar yavaşça hareket etse
+     (drift animasyonu, 15-20 saniyelik döngü) menü daha canlı olur.
+     Zorluk: Kolay | Etki: Orta
+
+12.9 Oyun Alanı Arka Plan Deseni
+     Oyun alanı şu an düz renk. Çok hafif, neredeyse görünmez
+     bir grid/dot pattern eklenirse derinlik hissi verir.
+     Zorluk: Kolay | Etki: Düşük-Orta
+
+--- C. OYNANIŞI ZENGİNLEŞTİREN ÖZELLİKLER ---
+
+12.10 Günlük Meydan Okuma (Daily Challenge)
+      Her gün sabit seed ile aynı kelime sırası.
+      Herkes aynı oyunu oynar → paylaşılabilir, karşılaştırılabilir.
+      "Bugünün Meydan Okuması" butonu ana menüye eklenir.
+      Zorluk: Yüksek | Etki: Çok Yüksek (retention artırır)
+
+12.11 Başarım / Rozet Sistemi
+      Kilometre taşları için rozetler:
+      - "İlk Adım" → İlk oyunu tamamla
+      - "On Numara" → 10 skor yap
+      - "Kombo Kralı" → 10x combo yap
+      - "Veteran" → 50 oyun oyna
+      - "Efsane" → 100 skor yap
+      Ana menüde veya ayrı ekranda gösterilir.
+      Zorluk: Orta | Etki: Yüksek (bağımlılık artırır)
+
+12.12 Zorluk Seçimi
+      Ayarlardan Kolay / Normal / Zor mod seçimi.
+      - Kolay: daha yavaş düşüş, daha az noise
+      - Zor: hızlı başlangıç, yüksek noise oranı
+      Farklı skor tabloları tutulabilir.
+      Zorluk: Orta | Etki: Orta
+
+12.13 Oyun Sonu İstatistik Detayı
+      Game over'da sadece skor değil:
+      - Doğru / yanlış sayısı
+      - Tepki süresi ortalaması
+      - En hızlı tepki
+      - Kaçıncı saniyede öldün
+      Zorluk: Orta | Etki: Orta
+
+--- D. TEKNİK İYİLEŞTİRMELER ---
+
+12.14 Onboarding (İlk Açılış Deneyimi)
+      İlk kez açan kullanıcı için 2-3 ekranlık hızlı tanıtım:
+      1. "Yeşil kelimeler gerçek, dokunarak yakala"
+      2. "Bozuk kelimelerden kaçın"
+      3. "Combo yap, bonus kazan"
+      Sonra bir daha gösterilmez (AsyncStorage flag).
+      Zorluk: Orta | Etki: Yüksek (ilk izlenim çok önemli)
+
+12.15 Performans: Kelime Pool Precompute
+      Her spawn'da SIGNALS dizisinden random seçim + generateNoiseWord
+      çağrılıyor. Oyun başında 20-30 kelimelik bir kuyruk hazırlansa
+      spawn anında sıfır hesaplama olur.
+      Zorluk: Kolay | Etki: Düşük (zaten hızlı ama iyi pratik)
+
+12.16 Accessibility İyileştirmeleri
+      - Tüm butonlara accessibilityLabel
+      - Reduce Motion tercihine saygı (animasyonları sadeleştir)
+      - Dynamic Type desteği (sistem font boyutu)
+      - Yüksek kontrast modu
+      Apple reviewerlar bazen accessibility'e bakıyor.
+      Zorluk: Orta | Etki: Orta
+
+--- E. ÖNCELİK SIRASI ÖNERİSİ ---
+
+Hemen yapılabilir (1-2 saat):
+  → 12.3 Screen shake
+  → 12.4 Kelime spawn animasyonu
+  → 12.5 Buton haptic
+  → 12.6 Custom font
+
+Orta vadede yapılabilir (yarım gün):
+  → 12.1 Geçiş animasyonları
+  → 12.2 Parçacık efekti
+  → 12.8 Floating dot animasyonu
+  → 12.14 Onboarding
+
+İleri seviye (1+ gün):
+  → 12.10 Daily challenge
+  → 12.11 Başarım sistemi
+  → 12.13 Detaylı game over istatistikleri
+
+
+[13] BU OTURUMDA YAPILAN DEĞİŞİKLİKLER (Referans)
+--------------------------------------------------------------
+
+12.1 Profesyonel Ana Menü
+     - Dekoratif floating dot'lar (3 renkli daire)
+     - Nefes alan GLINT başlık efekti (withRepeat animasyon)
+     - "Gerçeği yakala, sahteyi geç" alt başlık
+     - Birleşik istatistik paneli: rekor rozeti + kupa ikonu + istatistikler
+     - OYNA butonu tam genişlik, KURALLAR ve AYARLAR yan yana
+
+12.2 Oyun Ekranı
+     - Seviye bazlı renk döngüsü progress bar (yeşil→kırmızı→sarı→mavi→mor→turuncu...)
+     - Score pulse animasyonu (skor arttığında büyüme efekti)
+     - Combo floating badge (3x ve üstü)
+     - Level-up banner animasyonu
+     - Alt kısımda danger zone gradient'i
+     - Navbar altındaki çirkin gradient kaldırıldı
+
+12.3 Pause Sistemi
+     - Kelimeler yerinde donuyor (animation cancel + elapsed time tracking)
+     - Devam edince kaldığı yerden düşmeye devam
+     - Pause overlay: "Duraklatıldı" + skor + devam/çık butonları
+
+12.4 Game Over Ekranı
+     - Ölüm sebebi gösterimi (sahte kelimeye dokundun / gerçek kelimeyi kaçırdın)
+     - Renkli chip ile bozuk/doğru kelime gösterimi
+     - Yeni rekor badge'i
+     - Max combo gösterimi (ateş ikonu)
+     - Paylaş butonu (native Share API)
+
+12.5 Zenginleştirilmiş Kelime Havuzu
+     - 72'den 120+ kelimeye çıkarıldı
+     - Kategoriler: hayvanlar, eşyalar, meyveler/sebzeler, doğa,
+       renkler, meslekler, vücut, genel kavramlar
+
+12.6 Zorluk Sistemi
+     - Logaritmik zorluk eğrisi (asimptotik, asla minimuma ulaşmaz)
+     - Fall: 4200ms → ~1000ms, Spawn: 2200ms → ~400ms, Noise: %28 → ~%75
+     - 10 farklı renkte progress bar döngüsü
+
+12.7 Tema Sistemi
+     - Light ve Dark mode (sistem temasına otomatik uyum)
+     - ThemeContext + useColors hook
+     - Tüm komponentler dinamik tema destekli
+
+12.8 İstatistikler
+     - Toplam oyun, toplam skor, en iyi skor, en iyi kombo
+     - AsyncStorage'da kalıcı
+     - Ana menüde ve game over'da gösterim
+
+12.9 Ayarlar Ekranı
+     - Haptic feedback açma/kapama
+     - En iyi skoru sıfırlama
+
+
+[14] KAYNAKLAR
+--------------------------------------------------------------
+
+- App Review Guidelines:
+  https://developer.apple.com/app-store/review/guidelines/
+
+- iOS Human Interface Guidelines:
+  https://developer.apple.com/design/human-interface-guidelines/
+
+- Nisan 2026 SDK Değişiklikleri:
+  https://medium.com/@thakurneeshu280/apple-app-store-submission-changes-april-2026
+
+- Yaş Derecelendirme Güncellemesi:
+  https://developer.apple.com/news/upcoming-requirements/?id=07242025a
+
+- Apple Developer Güncel Haberler:
+  https://developer.apple.com/news/
+
+- Expo EAS Build Dokümantasyonu:
+  https://docs.expo.dev/build/introduction/
+
+- App Store Connect Yardım:
+  https://developer.apple.com/help/app-store-connect/
+
+- Expo OTA Updates:
+  https://docs.expo.dev/eas-update/introduction/
+
+
+==============================================================
+  Not: Bu liste 8 Mart 2026 tarihinde oluşturulmuştur.
+  Apple kuralları sürekli güncellenir, yayın öncesi
+  developer.apple.com'dan son durumu kontrol edin.
+==============================================================

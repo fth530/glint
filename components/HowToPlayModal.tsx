@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useMemo } from 'react';
 import { Modal, View, Text, Pressable, StyleSheet, ScrollView, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -9,7 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Colors from '@/constants/colors';
+import { useColors } from '@/context/ThemeContext';
 import { SIGNALS, EXAMPLE_NOISES as NOISES } from '@/constants/game';
 import { WEB_BOT_PAD } from '@/constants/layout';
 
@@ -19,6 +19,7 @@ type Props = {
 };
 
 export function HowToPlayModal({ visible, onClose }: Props) {
+  const Colors = useColors();
   const insets = useSafeAreaInsets();
   const overlayOpacity = useSharedValue(0);
   const sheetY = useSharedValue(80);
@@ -42,6 +43,20 @@ export function HowToPlayModal({ visible, onClose }: Props) {
 
   const botPad = Platform.OS === 'web' ? WEB_BOT_PAD : insets.bottom;
 
+  const themed = useMemo(() => ({
+    overlay: { backgroundColor: Colors.overlay },
+    sheet: { backgroundColor: Colors.bgCard },
+    handle: { backgroundColor: Colors.border },
+    sheetTitle: { color: Colors.text },
+    closeBtn: { backgroundColor: Colors.bgSoft },
+    sectionLabel: { color: Colors.textTer },
+    bodyText: { color: Colors.textSec },
+    chipSignal: { backgroundColor: Colors.accentLight, borderColor: Colors.accentMid },
+    chipNoise: { backgroundColor: Colors.dangerLight, borderColor: Colors.dangerMid },
+    ruleText: { color: Colors.textSec },
+    ackBtn: { backgroundColor: Colors.accent, shadowColor: Colors.accent },
+  }), [Colors]);
+
   return (
     <Modal
       visible={visible}
@@ -50,14 +65,14 @@ export function HowToPlayModal({ visible, onClose }: Props) {
       statusBarTranslucent
       onRequestClose={handleClose}
     >
-      <Animated.View style={[styles.overlay, overlayStyle]}>
+      <Animated.View style={[styles.overlay, themed.overlay, overlayStyle]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
-        <Animated.View style={[styles.sheet, sheetStyle, { paddingBottom: botPad + 20 }]}>
-          <View style={styles.handle} />
+        <Animated.View style={[styles.sheet, themed.sheet, sheetStyle, { paddingBottom: botPad + 20 }]}>
+          <View style={[styles.handle, themed.handle]} />
 
           <View style={styles.sheetHeader}>
-            <Text style={styles.sheetTitle}>How to Play</Text>
-            <Pressable onPress={handleClose} style={styles.closeBtn} hitSlop={12}>
+            <Text style={[styles.sheetTitle, themed.sheetTitle]}>Nasıl Oynanır</Text>
+            <Pressable onPress={handleClose} style={[styles.closeBtn, themed.closeBtn]} hitSlop={12}>
               <Ionicons name="close" size={20} color={Colors.textSec} />
             </Pressable>
           </View>
@@ -66,28 +81,29 @@ export function HowToPlayModal({ visible, onClose }: Props) {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
-            <Text style={styles.sectionLabel}>OBJECTIVE</Text>
-            <Text style={styles.bodyText}>
-              Words fall from the top. Tap the real ones, ignore the fakes. React fast — every second counts.
+            <Text style={[styles.sectionLabel, themed.sectionLabel]}>AMAÇ</Text>
+            <Text style={[styles.bodyText, themed.bodyText]}>
+              Kelimeler yukarıdan düşer. Gerçek olanlara dokun, sahte olanları görmezden gel. Hızlı ol — her saniye önemli.
             </Text>
 
             <View style={styles.spacer} />
 
-            <Text style={styles.sectionLabel}>SIGNAL WORDS — TAP THESE</Text>
+            <Text style={[styles.sectionLabel, themed.sectionLabel]}>GERÇEK KELİMELER — BUNLARA DOKUN</Text>
             <View style={styles.chipRow}>
-              {SIGNALS.map((w) => (
-                <View key={w} style={[styles.chip, styles.chipSignal]}>
+              {SIGNALS.slice(0, 5).map((w) => (
+                <View key={w} style={[styles.chip, themed.chipSignal]}>
                   <Text style={[styles.chipText, { color: Colors.accent }]}>{w}</Text>
                 </View>
               ))}
+              <Text style={[styles.moreText, { color: Colors.textTer }]}>+{SIGNALS.length - 5} kelime daha</Text>
             </View>
 
             <View style={styles.spacer} />
 
-            <Text style={styles.sectionLabel}>NOISE WORDS — IGNORE THESE</Text>
+            <Text style={[styles.sectionLabel, themed.sectionLabel]}>SAHTE KELİMELER — BUNLARI GÖRMEZDEN GEL</Text>
             <View style={styles.chipRow}>
-              {NOISES.map((w) => (
-                <View key={w} style={[styles.chip, styles.chipNoise]}>
+              {NOISES.slice(0, 5).map((w) => (
+                <View key={w} style={[styles.chip, themed.chipNoise]}>
                   <Text style={[styles.chipText, { color: Colors.danger }]}>{w}</Text>
                 </View>
               ))}
@@ -96,18 +112,18 @@ export function HowToPlayModal({ visible, onClose }: Props) {
             <View style={styles.spacer} />
 
             <View style={styles.rulesList}>
-              <Rule icon="checkmark-circle" color={Colors.accent} text="Tap a signal word → +1 point" />
-              <Rule icon="close-circle" color={Colors.danger} text="Tap a noise word → Game Over" />
-              <Rule icon="close-circle" color={Colors.danger} text="Miss a signal word → Game Over" />
-              <Rule icon="trending-up" color={Colors.textSec} text="Speed and noise increase with score" />
+              <Rule icon="checkmark-circle" color={Colors.accent} textColor={Colors.textSec} text="Gerçek kelimeye dokun → +1 puan" />
+              <Rule icon="close-circle" color={Colors.danger} textColor={Colors.textSec} text="Sahte kelimeye dokun → Oyun Biter" />
+              <Rule icon="close-circle" color={Colors.danger} textColor={Colors.textSec} text="Gerçek kelimeyi kaçır → Oyun Biter" />
+              <Rule icon="trending-up" color={Colors.textSec} textColor={Colors.textSec} text="Skor arttıkça hız ve sahte kelime oranı artar" />
             </View>
           </ScrollView>
 
           <Pressable
             onPress={handleClose}
-            style={({ pressed }) => [styles.ackBtn, pressed && styles.ackBtnPressed]}
+            style={({ pressed }) => [styles.ackBtn, themed.ackBtn, pressed && styles.ackBtnPressed]}
           >
-            <Text style={styles.ackBtnText}>Got it</Text>
+            <Text style={styles.ackBtnText}>Anladım</Text>
           </Pressable>
         </Animated.View>
       </Animated.View>
@@ -118,28 +134,41 @@ export function HowToPlayModal({ visible, onClose }: Props) {
 function Rule({
   icon,
   color,
+  textColor,
   text,
 }: {
   icon: React.ComponentProps<typeof Ionicons>['name'];
   color: string;
+  textColor: string;
   text: string;
 }) {
   return (
-    <View style={styles.ruleRow}>
+    <View style={ruleStyles.ruleRow}>
       <Ionicons name={icon} size={16} color={color} />
-      <Text style={styles.ruleText}>{text}</Text>
+      <Text style={[ruleStyles.ruleText, { color: textColor }]}>{text}</Text>
     </View>
   );
 }
 
+const ruleStyles = StyleSheet.create({
+  ruleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  ruleText: {
+    fontSize: 14,
+    flex: 1,
+    lineHeight: 20,
+  },
+});
+
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: Colors.overlay,
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: Colors.bgCard,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingTop: 12,
@@ -155,7 +184,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: Colors.border,
     alignSelf: 'center',
     marginBottom: 20,
   },
@@ -168,14 +196,12 @@ const styles = StyleSheet.create({
   sheetTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: Colors.text,
     letterSpacing: -0.4,
   },
   closeBtn: {
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: Colors.bgSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -185,13 +211,11 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: Colors.textTer,
     letterSpacing: 1.8,
     marginBottom: 10,
   },
   bodyText: {
     fontSize: 15,
-    color: Colors.textSec,
     lineHeight: 22,
   },
   chipRow: {
@@ -205,18 +229,16 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
   },
-  chipSignal: {
-    backgroundColor: Colors.accentLight,
-    borderColor: Colors.accentMid,
-  },
-  chipNoise: {
-    backgroundColor: Colors.dangerLight,
-    borderColor: Colors.dangerMid,
-  },
   chipText: {
     fontSize: 13,
     fontWeight: '700',
     letterSpacing: 1.5,
+  },
+  moreText: {
+    fontSize: 12,
+    fontWeight: '500',
+    fontStyle: 'italic',
+    alignSelf: 'center',
   },
   spacer: {
     height: 24,
@@ -224,24 +246,11 @@ const styles = StyleSheet.create({
   rulesList: {
     gap: 12,
   },
-  ruleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  ruleText: {
-    fontSize: 14,
-    color: Colors.textSec,
-    flex: 1,
-    lineHeight: 20,
-  },
   ackBtn: {
-    backgroundColor: Colors.accent,
     borderRadius: 18,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 20,
-    shadowColor: Colors.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.28,
     shadowRadius: 12,

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Colors from '@/constants/colors';
+import { useColors } from '@/context/ThemeContext';
 import { WEB_TOP_PAD, WEB_BOT_PAD } from '@/constants/layout';
 
 type Props = {
@@ -32,6 +32,7 @@ export function SettingsScreen({
   onResetBestScore,
   onBack,
 }: Props) {
+  const Colors = useColors();
   const insets = useSafeAreaInsets();
   const [resetConfirmed, setResetConfirmed] = useState(false);
 
@@ -60,12 +61,12 @@ export function SettingsScreen({
       setTimeout(() => setResetConfirmed(false), 2000);
     } else {
       Alert.alert(
-        'Reset Best Score',
-        'This will permanently delete your best score. Are you sure?',
+        'Skoru Sıfırla',
+        'En iyi skorun kalıcı olarak silinecek. Emin misin?',
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: 'İptal', style: 'cancel' },
           {
-            text: 'Reset',
+            text: 'Sıfırla',
             style: 'destructive',
             onPress: () => {
               onResetBestScore();
@@ -78,28 +79,41 @@ export function SettingsScreen({
     }
   }, [onResetBestScore]);
 
+  const themed = useMemo(() => ({
+    container: { backgroundColor: Colors.bg },
+    backBtn: { backgroundColor: Colors.bgSoft },
+    headerTitle: { color: Colors.text },
+    sectionLabel: { color: Colors.textTer },
+    row: { backgroundColor: Colors.bgSoft },
+    rowIconBg: { backgroundColor: Colors.accentLight },
+    rowTitle: { color: Colors.text },
+    rowSub: { color: Colors.textSec },
+    resetBtn: { backgroundColor: Colors.dangerLight, borderColor: Colors.dangerMid },
+    resetBtnText: { color: Colors.danger },
+  }), [Colors]);
+
   return (
-    <View style={[styles.container, { paddingTop: topPad, paddingBottom: botPad }]}>
+    <View style={[styles.container, themed.container, { paddingTop: topPad, paddingBottom: botPad }]}>
       <Animated.View style={[styles.inner, animStyle]}>
         <View style={styles.header}>
-          <Pressable onPress={handleBack} style={styles.backBtn} hitSlop={12}>
+          <Pressable onPress={handleBack} style={[styles.backBtn, themed.backBtn]} hitSlop={12}>
             <Ionicons name="chevron-back" size={22} color={Colors.text} />
           </Pressable>
-          <Text style={styles.headerTitle}>Settings</Text>
+          <Text style={[styles.headerTitle, themed.headerTitle]}>Ayarlar</Text>
           <View style={styles.backBtnPlaceholder} />
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>GAMEPLAY</Text>
+          <Text style={[styles.sectionLabel, themed.sectionLabel]}>OYUN</Text>
 
-          <View style={styles.row}>
+          <View style={[styles.row, themed.row]}>
             <View style={styles.rowLeft}>
-              <View style={styles.rowIconBg}>
+              <View style={[styles.rowIconBg, themed.rowIconBg]}>
                 <Ionicons name="phone-portrait-outline" size={16} color={Colors.accent} />
               </View>
               <View>
-                <Text style={styles.rowTitle}>Haptic Feedback</Text>
-                <Text style={styles.rowSub}>Vibration on tap and game over</Text>
+                <Text style={[styles.rowTitle, themed.rowTitle]}>Titreşim</Text>
+                <Text style={[styles.rowSub, themed.rowSub]}>Dokunma ve oyun sonu titreşimi</Text>
               </View>
             </View>
             <Switch
@@ -112,11 +126,11 @@ export function SettingsScreen({
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>DATA</Text>
+          <Text style={[styles.sectionLabel, themed.sectionLabel]}>VERİ</Text>
 
           <Pressable
             onPress={handleReset}
-            style={({ pressed }) => [styles.resetBtn, pressed && styles.resetBtnPressed]}
+            style={({ pressed }) => [styles.resetBtn, themed.resetBtn, pressed && styles.resetBtnPressed]}
             testID="reset-score-button"
           >
             <Ionicons
@@ -124,8 +138,8 @@ export function SettingsScreen({
               size={18}
               color={resetConfirmed ? Colors.accent : Colors.danger}
             />
-            <Text style={[styles.resetBtnText, resetConfirmed && { color: Colors.accent }]}>
-              {resetConfirmed ? 'Score Reset' : 'Reset Best Score'}
+            <Text style={[styles.resetBtnText, themed.resetBtnText, resetConfirmed && { color: Colors.accent }]}>
+              {resetConfirmed ? 'Skor Sıfırlandı' : 'En İyi Skoru Sıfırla'}
             </Text>
           </Pressable>
         </View>
@@ -137,7 +151,6 @@ export function SettingsScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.bg,
   },
   inner: {
     flex: 1,
@@ -154,7 +167,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.bgSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -164,7 +176,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.text,
     letterSpacing: -0.3,
   },
   section: {
@@ -173,7 +184,6 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: Colors.textTer,
     letterSpacing: 1.8,
     marginBottom: 12,
     marginLeft: 4,
@@ -182,7 +192,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.bgSoft,
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -197,30 +206,25 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: Colors.accentLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   rowTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.text,
     marginBottom: 2,
   },
   rowSub: {
     fontSize: 12,
-    color: Colors.textSec,
   },
   resetBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    backgroundColor: Colors.dangerLight,
     borderRadius: 16,
     paddingVertical: 16,
     borderWidth: 1,
-    borderColor: Colors.dangerMid,
   },
   resetBtnPressed: {
     opacity: 0.80,
@@ -228,6 +232,5 @@ const styles = StyleSheet.create({
   resetBtnText: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.danger,
   },
 });

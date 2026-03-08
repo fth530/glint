@@ -2,22 +2,51 @@
  * Oyun Sabitleri ve Dinamik Glitch Motoru (Single Source of Truth)
  */
 
-/** Düzgün ve genişletilmiş doğru kelimeler (Signal) kütüphanesi - 70+ kelime */
+/** Düzgün ve genişletilmiş doğru kelimeler (Signal) kütüphanesi - 120+ kelime */
 export const SIGNALS = [
   // Hayvanlar
-  'KEDİ', 'KÖPEK', 'TAVŞAN', 'ASLAN', 'KAPLAN', 'KARTAL', 'YILAN', 'FİL', 'ZEBRA', 'MAYMUN', 'KURT', 'TİLKİ', 'AYI', 'GEYİK', 'ŞAHİN',
+  'KEDİ', 'KÖPEK', 'TAVŞAN', 'ASLAN', 'KAPLAN', 'KARTAL', 'YILAN', 'FİL', 'ZEBRA', 'MAYMUN',
+  'KURT', 'TİLKİ', 'AYI', 'GEYİK', 'ŞAHİN', 'BALIK', 'KURBAĞA', 'PENGUEN', 'PAPAĞAN', 'KARGA',
+  'ÖRDEK', 'KOYUN', 'KEÇİ', 'İNEK', 'AT',
   // Eşyalar
-  'MASA', 'KAPI', 'DOLAP', 'KOLTUK', 'YATAK', 'LAMBA', 'KİTAP', 'KALEM', 'DEFTER', 'ÇANTA', 'BİLGİSAYAR', 'TELEFON', 'TABLET', 'SAAT', 'GÖZLÜK',
+  'MASA', 'KAPI', 'DOLAP', 'KOLTUK', 'YATAK', 'LAMBA', 'KİTAP', 'KALEM', 'DEFTER', 'ÇANTA',
+  'BİLGİSAYAR', 'TELEFON', 'TABLET', 'SAAT', 'GÖZLÜK', 'AYNA', 'BARDAK', 'TABAK', 'ÇATAL',
+  'BIÇAK', 'KAŞIK', 'YASTIK', 'HALİ', 'PERDELİK',
   // Meyveler/Sebzeler
-  'ELMA', 'ARMUT', 'MUZ', 'ÇİLEK', 'KİRAZ', 'KARPUZ', 'KAVUN', 'PORTAKAL', 'MANDALİNA', 'HAVUÇ', 'DOMATES', 'SALATALIK', 'BİBER', 'SOĞAN', 'SARIMSAK',
+  'ELMA', 'ARMUT', 'MUZ', 'ÇİLEK', 'KİRAZ', 'KARPUZ', 'KAVUN', 'PORTAKAL', 'MANDALİNA',
+  'HAVUÇ', 'DOMATES', 'SALATALIK', 'BİBER', 'SOĞAN', 'SARIMSAK', 'ÜZÜM', 'ANANAS', 'İNCİR',
+  'NAR', 'ERİK', 'MANGO', 'LİMON', 'KABAK', 'PATATES', 'LAHANA',
   // Doğa
-  'AĞAÇ', 'ÇİÇEK', 'YAPRAK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'YAĞMUR', 'KAR', 'RÜZGAR', 'FIRTINA', 'DENİZ', 'NEHİR', 'GÖL', 'DAĞ', 'ORMAN',
+  'AĞAÇ', 'ÇİÇEK', 'YAPRAK', 'GÜNEŞ', 'YILDIZ', 'BULUT', 'YAĞMUR', 'KAR', 'RÜZGAR',
+  'FIRTINA', 'DENİZ', 'NEHİR', 'GÖL', 'DAĞ', 'ORMAN', 'TOPRAK', 'KAYA', 'VOLKAN', 'DEPREM',
+  'GÖKKUŞAĞI', 'ŞİMŞEK', 'SİS', 'DALGA', 'ÇÖL', 'VADI',
   // Renkler
-  'BEYAZ', 'SİYAH', 'KIRMIZI', 'MAVİ', 'YEŞİL', 'SARI', 'MOR', 'PEMBE', 'TURUNCU', 'KAHVERENGİ', 'GRİ', 'LACİVERT'
+  'BEYAZ', 'SİYAH', 'KIRMIZI', 'MAVİ', 'YEŞİL', 'SARI', 'MOR', 'PEMBE', 'TURUNCU',
+  'KAHVERENGİ', 'GRİ', 'LACİVERT', 'BORDO', 'EFLATUN',
+  // Meslekler
+  'DOKTOR', 'AVUKAT', 'ASKER', 'PİLOT', 'ŞOFÖR', 'AŞÇI', 'BERBER', 'MİMAR',
+  // Vücut
+  'KALP', 'BEYİN', 'GÖZLER', 'KULAK', 'BURUN', 'DİŞ', 'PARMAK',
+  // Genel
+  'DÜNYA', 'UZAY', 'ZAMAN', 'MÜZIK', 'RÜYA', 'ATEŞ', 'BARIŞ', 'CESARET', 'UMUT',
+];
+
+/** Seviye başına progress bar renkleri — her level tamamlandığında sıradaki renge geçer */
+export const LEVEL_COLORS = [
+  '#00C853', // yeşil
+  '#FF5252', // kırmızı
+  '#FFD600', // sarı
+  '#448AFF', // mavi
+  '#E040FB', // mor
+  '#FF6D00', // turuncu
+  '#00E5FF', // camgöbeği
+  '#FF4081', // pembe
+  '#76FF03', // açık yeşil
+  '#7C4DFF', // indigo
 ];
 
 /** Eğitim menüsünde (How to Play) gösterilecek örnek bozuk kelimeler */
-export const EXAMPLE_NOISES = ['K3Dİ', 'KİT4P', 'M4Vİ', 'T3L3F0N', 'ELAM', 'KÖP3K'];
+export const EXAMPLE_NOISES = ['K3Dİ', 'KİT4P', 'M4Vİ', 'T3L3F0N', 'ELAM', 'KÖP3K', 'A5L4N', 'GÜN3Ş'];
 
 /** 
  * Glitch Motoru: Düzgün bir kelimeyi alıp dinamik olarak bozuk (Noise) bir versiyona çevirir.
@@ -94,11 +123,20 @@ export function getLevel(score: number): number {
   return Math.floor(score / 5) + 1;
 }
 
-/** Verilen skora göre zorluk parametrelerini hesaplar */
+/** Verilen skora göre zorluk parametrelerini hesaplar
+ *  Erken leveller hızlı zorlaşır, sonra logaritmik yavaşlayarak
+ *  sonsuz zorluk artışı sağlar (asla tam minimuma ulaşmaz).
+ */
 export function getDifficulty(score: number) {
   const level = Math.floor(score / 5);
-  const fallDuration = Math.max(1400, 4200 - level * 220);
-  const spawnInterval = Math.max(550, 2200 - level * 110);
-  const noiseRatio = Math.min(0.72, 0.28 + level * 0.05);
+
+  // Logaritmik eğri: hızlı başlar, giderek yavaşlar ama asla durmaz
+  // t: 0→1 arası normalize değer, level arttıkça 1'e yaklaşır ama ulaşmaz
+  const t = 1 - 1 / (1 + level * 0.18);
+
+  const fallDuration = 4200 - t * 3200;   // 4200ms → ~1000ms (asimptotik)
+  const spawnInterval = 2200 - t * 1800;   // 2200ms → ~400ms
+  const noiseRatio = 0.28 + t * 0.47;      // 0.28 → ~0.75
+
   return { fallDuration, spawnInterval, noiseRatio };
 }
